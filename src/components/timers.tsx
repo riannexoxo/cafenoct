@@ -3,8 +3,11 @@
 import { useEffect, useState } from "react";
 import { supabase, useRows } from "@/lib/use-rows";
 import { clock } from "@/lib/dates";
+import { hm } from "@/lib/cal";
+import { toast } from "@/lib/toast";
 import { clientLabel, type Client } from "@/lib/types";
 import Icon from "./icon";
+import TimeForm, { type TimeDraft } from "./time-form";
 
 type Timer = { id: string; client_id: string | null; note: string; started_at: string };
 
@@ -25,9 +28,9 @@ export async function startTimer(clientId: string | null, note = "") {
 // Stopping turns the timer into a time entry for that client, then removes the timer.
 export async function stopTimer(t: Timer) {
   const minutes = Math.max(1, Math.round((Date.now() - new Date(t.started_at).getTime()) / 60000));
-  const { error } = await supabase().from("time_entries").insert({ client_id: t.client_id, started_at: t.started_at, minutes, note: t.note, source: "timer" });
+  const { data, error } = await supabase().from("time_entries").insert({ client_id: t.client_id, started_at: t.started_at, minutes, note: t.note, source: "timer" }).select("id,client_id,started_at,minutes,note,source").single();
   if (!error) await supabase().from("timers").delete().eq("id", t.id);
-  return minutes;
+  return { minutes, entry: data as TimeDraft | null, error };
 }
 
 export function Clock({ since }: { since: string }) {
@@ -40,20 +43,25 @@ export default function Timers({ clients, clientId }: { clients: Client[]; clien
   const [rows, reload, setRows] = useTimers();
   const [pick, setPick] = useState(clientId ?? "");
   const [note, setNote] = useState("");
+  const [fix, setFix] = useState<TimeDraft | null>(null);
   const mine = (rows ?? []).filter((t) => !clientId || t.client_id === clientId);
   const label = (id: string | null) => { const c = clients.find((x) => x.id === id); return c ? clientLabel(c) : "No client"; };
 
   async function start(e: React.FormEvent) {
     e.preventDefault();
     const cid = clientId ?? (pick || null);
-    if (cid && (rows ?? []).some((t) => t.client_id === cid)) return;
+    if (cid && (rows ?? []).some((t) => t.client_id === cid)) return toast(`${label(cid)} already has a timer running.`);
     const { data } = await startTimer(cid, note);
     setNote("");
-    if (data) setRows((r) => [...(r ?? []), data]); else reload();
+    if (data) { setRows((r) => [...(r ?? []), data]); toast(`Timer started${cid ? ` for ${label(cid)}` : ""}`); } else reload();
   }
   async function stop(t: Timer) {
     setRows((r) => (r ?? []).filter((x) => x.id !== t.id));
-    await stopTimer(t);
+    const { minutes, entry, error } = await stopTimer(t);
+    if (error) { reload(); return toast("Could not save. Check your connection."); }
+    // Over 10 hours usually means the timer was left running. Open the entry so it's easy to fix.
+    if (minutes > 600 && entry) { toast(`Saved ${hm(minutes)}. That's long, so fix it if you forgot to stop.`); setFix(entry); }
+    else toast(`Saved ${hm(minutes)} to ${label(t.client_id)}`);
   }
 
   return (
@@ -83,6 +91,7 @@ export default function Timers({ clients, clientId }: { clients: Client[]; clien
           <button className="btn solid" type="submit"><Icon name="play" />{mine.length ? "Start another" : "Start timer"}</button>
         </form>
       )}
+      {fix && <TimeForm entry={fix} clients={clients} onClose={() => setFix(null)} />}
     </div>
   );
 }

@@ -34,7 +34,7 @@ export default async function ClientPortal({ params }: { params: Promise<{ id: s
         <TodoList clients={clients ?? []} clientId={c.id} />
         <Timers clients={clients ?? []} clientId={c.id} />
       </div>
-      <div className="card small muted row" style={{ gap: 8 }}><Icon name="spark" size={16} />Projects, calendar, content, money, docs and EOD reports for this client are next to move over.</div>
+      <div className="card small muted row" style={{ gap: 8 }}><Icon name="spark" size={16} />Projects, content, money, docs and EOD reports for this client are next to move over.</div>
     </>
   );
 }
