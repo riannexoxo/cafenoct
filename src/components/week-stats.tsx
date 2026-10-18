@@ -37,7 +37,7 @@ export default function WeekStats({ clients, goal, currency = "USD", clientId }:
       <div className="stat"><span className="k">Today</span><span className="v">{hrs(todayMin)}h</span><span className="s">{plannedToday ? `of ${plannedToday}h planned` : "logged"}</span>{bar(todayMin, plannedToday)}</div>
       <div className="stat"><span className="k">This week</span><span className="v">{hrs(weekMin)}h</span><span className="s">{weekGoal ? `of ${weekGoal}h ${c ? "target" : "goal"}` : "logged"}</span>{bar(weekMin, weekGoal)}</div>
       <div className="stat"><span className="k">Earned this week</span><span className="v">{c && c.rate_type !== "Hourly" ? "—" : money(earned, c?.currency ?? currency)}</span><span className="s">{c && c.rate_type !== "Hourly" ? c.rate_type : "hours × rate"}</span></div>
-      <div className="stat"><span className="k">{c ? "Rate" : "Active clients"}</span><span className="v">{c ? (c.rate ? money(c.rate, c.currency) : "—") : clients.filter((x) => x.status === "Active").length}</span><span className="s">{c ? (c.rate_type === "Hourly" ? "per hour" : c.rate_type) : "portals"}</span></div>
+      <div className="stat"><span className="k">{c ? "Rate" : "Active clients"}</span><span className="v">{c ? (c.rate ? money(c.rate, c.currency) : "—") : clients.filter((x) => x.status === "Active" && !x.personal).length}</span><span className="s">{c ? (c.rate_type === "Hourly" ? "per hour" : c.rate_type) : "portals"}</span></div>
     </div>
   );
 }

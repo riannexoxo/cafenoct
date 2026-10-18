@@ -9,6 +9,7 @@ import { rateText } from "@/lib/format";
 import { signOut } from "@/app/(app)/actions";
 import Icon, { type IconName } from "./icon";
 import ClientAvatar from "./client-avatar";
+import { portalTabs } from "@/lib/roles";
 
 const ME: [string, string, IconName][] = [
   ["/calendar", "My calendar", "schedule"],
@@ -22,17 +23,6 @@ const WORKSPACE: [string, string, IconName][] = [
   ["/docs", "Docs", "docs"],
   ["/content", "Content", "content"],
 ];
-const PORTAL: [string, string, IconName][] = [
-  ["", "Overview", "today"],
-  ["/projects", "Projects", "projects"],
-  ["/work", "Work", "tasks"],
-  ["/calendar", "Calendar", "schedule"],
-  ["/content", "Content", "content"],
-  ["/invoices", "Invoices", "money"],
-  ["/docs", "Docs", "docs"],
-  ["/reports", "EOD reports", "chat"],
-];
-
 export default function Sidebar({ clients, name }: { clients: Client[]; name: string }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
@@ -65,7 +55,7 @@ export default function Sidebar({ clients, name }: { clients: Client[]; name: st
           )}
           <span className="brand-txt">
             <b>{current ? clientLabel(current) : brand.name}</b>
-            <span>{current ? "Client account" : `Admin${name ? " · " + name : ""}`}</span>
+            <span>{current ? (current.personal ? "My own portal" : "Client account") : `Admin${name ? " · " + name : ""}`}</span>
           </span>
           <Icon name="updown" className="acct-chev" />
         </button>
@@ -93,7 +83,7 @@ export default function Sidebar({ clients, name }: { clients: Client[]; name: st
         {current ? (
           <>
             <div className="nav-h">{clientLabel(current)}</div>
-            {PORTAL.map(([sub, label, icon]) => item(`/clients/${current.id}${sub}`, label, icon, path === `/clients/${current.id}${sub}`))}
+            {portalTabs(current).map(([sub, label, icon]) => item(`/clients/${current.id}${sub}`, label, icon, path === `/clients/${current.id}${sub}`))}
             <div className="nav-h" />
             {item("/", "Back to Admin", "left", false)}
           </>

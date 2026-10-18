@@ -7,6 +7,7 @@ import Icon from "@/components/icon";
 import WeekStats from "@/components/week-stats";
 import TodoList from "@/components/todo-list";
 import Timers from "@/components/timers";
+import { portalTabs, roleLabel } from "@/lib/roles";
 import ClientAvatar from "@/components/client-avatar";
 import { TheirTime } from "@/components/client-clocks";
 
@@ -24,18 +25,21 @@ export default async function ClientPortal({ params }: { params: Promise<{ id: s
         <div className="row" style={{ flexWrap: "nowrap", gap: 16, minWidth: 0 }}>
           <ClientAvatar c={c} />
           <div style={{ minWidth: 0 }}>
-            <div className="eyebrow">Client portal · {rateText(c)}{schedule ? ` · ${schedule}` : ""}</div>
+            <div className="eyebrow">{c.personal ? "My own portal" : `Client portal · ${rateText(c)}${schedule ? ` · ${schedule}` : ""}`}</div>
             <h1 style={{ overflowWrap: "anywhere" }}>{clientLabel(c)}</h1>
             <p>{c.company ? c.name : ""}{c.services ? `${c.company ? " · " : ""}${c.services}` : ""}</p>
+            {c.roles.length > 0 && <div className="row" style={{ gap: 6, marginTop: 8 }}>{c.roles.map((r) => <span key={r} className="pill acc">{roleLabel(r)}</span>)}</div>}
             {c.timezone && <div style={{ marginTop: 8 }}><TheirTime tz={c.timezone} name={c.name.split(" ")[0]} /></div>}
           </div>
         </div>
         <div className="row">
-          <Link className="btn" href={`/clients/${c.id}/calendar`}><Icon name="schedule" />Calendar</Link>
-          <Link className="btn solid" href={`/clients/${c.id}/reports`}><Icon name="chat" />{c.report_cadence === "Weekly" ? "Weekly report" : "EOD report"}</Link>
+          {!c.personal && <Link className="btn solid" href={`/clients/${c.id}/reports`}><Icon name="chat" />{c.report_cadence === "Weekly" ? "Weekly report" : "EOD report"}</Link>}
           <Link className="btn" href={`/clients/${c.id}/edit`}>Edit</Link>
         </div>
       </div>
+      <div className="tool-row">{portalTabs(c).slice(1).map(([sub, label, icon]) => (
+        <Link key={sub} href={`/clients/${c.id}${sub}`} className="tool"><Icon name={icon} /><span>{label}</span></Link>
+      ))}</div>
       <WeekStats clients={clients ?? []} goal={c.weekly_hours ?? 0} clientId={c.id} />
       <div className="grid g2" style={{ alignItems: "start" }}>
         <TodoList clients={clients ?? []} clientId={c.id} />

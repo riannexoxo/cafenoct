@@ -7,6 +7,7 @@ import { clientLabel, type Client } from "@/lib/types";
 import { signOut } from "@/app/(app)/actions";
 import Icon, { type IconName } from "./icon";
 import ClientAvatar from "./client-avatar";
+import { portalTabs } from "@/lib/roles";
 
 const TABS: [string, string, IconName][] = [
   ["/", "Today", "today"],
@@ -31,6 +32,7 @@ export default function MobileNav({ clients }: { clients: Client[] }) {
   const [open, setOpen] = useState(false);
   const active = (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
   const inTabs = TABS.some(([h]) => active(h));
+  const here = clients.find((c) => c.id === path.match(/^\/clients\/([0-9a-f-]{36})/)?.[1]);
   return (
     <>
       <nav className="tabbar" aria-label="Sections">
@@ -48,6 +50,19 @@ export default function MobileNav({ clients }: { clients: Client[] }) {
       {open && (
         <div className="scrim" onClick={(e) => e.target === e.currentTarget && setOpen(false)}>
           <div className="modal in" role="dialog" aria-modal="true" aria-label="All sections" onClick={(e) => { if ((e.target as HTMLElement).closest("a")) setOpen(false); }}>
+            {here && (
+              <>
+                <div className="sheet-h">{clientLabel(here)}</div>
+                <div className="sheet-grid">
+                  {portalTabs(here).map(([sub, label, icon]) => (
+                    <Link key={sub} href={`/clients/${here.id}${sub}`}>
+                      <Icon name={icon} />
+                      <span>{label}</span>
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
             {clients.length > 0 && (
               <>
                 <div className="sheet-h">Client accounts</div>

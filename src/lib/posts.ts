@@ -1,0 +1,40 @@
+// Content calendar: posts, platforms and their limits.
+export type Post = {
+  id: string; client_id: string | null; title: string; publish_on: string | null; publish_at: string | null;
+  status: Status; format: string; caption: string; hashtags: string; hook: string; pillar: string;
+  platforms: string[]; post_urls: Record<string, string>; stats: Record<string, Record<string, number>>; asset_url: string; notes: string;
+};
+export type Status = "Idea" | "Drafting" | "For approval" | "Scheduled" | "Posted";
+export const POST_COLS = "id,client_id,title,publish_on,publish_at,status,format,caption,hashtags,hook,pillar,platforms,post_urls,stats,asset_url,notes";
+
+export const PLATFORMS: { name: string; short: string; color: string; caption: number; tags: number; tagHint: string }[] = [
+  { name: "Instagram", short: "IG", color: "#D6457A", caption: 2200, tags: 30, tagHint: "Up to 30. 3–5 focused ones usually work best." },
+  { name: "Facebook", short: "FB", color: "#3B6FD8", caption: 63206, tags: 10, tagHint: "1–3 is plenty on Facebook." },
+  { name: "TikTok", short: "TT", color: "#1F1F1F", caption: 4000, tags: 10, tagHint: "3–5 that match the video's topic." },
+  { name: "YouTube", short: "YT", color: "#D93A2B", caption: 5000, tags: 15, tagHint: "Up to 15; the first 3 show above the title." },
+  { name: "LinkedIn", short: "IN", color: "#2867B2", caption: 3000, tags: 5, tagHint: "3–5 professional ones." },
+  { name: "Threads", short: "TH", color: "#555555", caption: 500, tags: 1, tagHint: "Threads allows one topic tag." },
+  { name: "Pinterest", short: "PI", color: "#C8232C", caption: 500, tags: 20, tagHint: "Keywords matter more than hashtags." },
+];
+export const platform = (n: string) => PLATFORMS.find((p) => p.name === n);
+export const FORMATS = ["Reel", "Carousel", "Single image", "Story", "Video", "Text", "Live"];
+export const STATUSES: { name: Status; tone: string }[] = [
+  { name: "Idea", tone: "var(--muted)" }, { name: "Drafting", tone: "var(--warn)" }, { name: "For approval", tone: "var(--lilac)" },
+  { name: "Scheduled", tone: "var(--accent)" }, { name: "Posted", tone: "var(--good)" },
+];
+export const statusTone = (s: string) => STATUSES.find((x) => x.name === s)?.tone ?? "var(--muted)";
+
+// All the hashtags in the caption and hashtag box, without repeats.
+export const hashtags = (p: Pick<Post, "caption" | "hashtags">) => [...new Set(`${p.caption} ${p.hashtags}`.match(/#[\p{L}\p{N}_]+/gu)?.map((t) => t.toLowerCase()) ?? [])];
+// The tightest limits among the chosen platforms.
+export function limits(platforms: string[]) {
+  const ps = platforms.map(platform).filter(Boolean) as (typeof PLATFORMS)[number][];
+  if (!ps.length) return { caption: 2200, tags: 30, by: "Instagram" };
+  const cap = ps.reduce((a, b) => (b.caption < a.caption ? b : a)), tag = ps.reduce((a, b) => (b.tags < a.tags ? b : a));
+  return { caption: cap.caption, tags: tag.tags, by: tag.name, capBy: cap.name };
+}
+// Ready to paste: hook (if the caption doesn't already open with it), caption, then hashtags.
+export const fullCaption = (p: Pick<Post, "caption" | "hashtags" | "hook">) => {
+  const hook = p.hook.trim(), cap = p.caption.trim();
+  return [hook && !cap.startsWith(hook) ? hook : "", cap, p.hashtags.trim()].filter(Boolean).join("\n\n");
+};

@@ -17,6 +17,8 @@ export type Client = {
   logo_url: string;
   hours_tz: string; // time zone the usual hours are set in; empty means the client's time zone
   day_starts: Record<string, string>; // start time for particular days, e.g. {"3": "08:00"} for Wednesdays
+  roles: string[]; // what you do for them: smm, web, ea, design, video, live, code (see lib/roles.ts)
+  personal: boolean; // your own portal: no billing or hours
 };
 
 export type Profile = { user_id: string; name: string; currency: string; weekly_goal: number; business: string; invoice_email: string };

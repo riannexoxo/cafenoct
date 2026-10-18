@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 import { supabase } from "@/lib/use-rows";
 import { ZONES, deviceTz, tzShort } from "@/lib/tz";
+import { ROLES } from "@/lib/roles";
 import type { Client } from "@/lib/types";
 import ClientAvatar from "./client-avatar";
 
@@ -18,7 +19,7 @@ export default function ClientForm({ initial }: { initial?: Partial<Form> & { id
   const [f, setF] = useState<Form>({
     name: "", company: "", email: "", contact: "", services: "", status: "Active", source: "", rate: null, rate_type: "Hourly",
     currency: "USD", work_days: [], hours_per_day: null, weekly_hours: null, start_time: null, report_cadence: "",
-    color: COLORS[0], links: "", notes: "", timezone: "", logo_url: "", hours_tz: "", day_starts: {}, ...initial,
+    color: COLORS[0], links: "", notes: "", timezone: "", logo_url: "", hours_tz: "", day_starts: {}, roles: [], personal: false, ...initial,
   } as Form);
   const [msg, setMsg] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -73,6 +74,14 @@ export default function ClientForm({ initial }: { initial?: Partial<Form> & { id
       <div className="field"><label htmlFor="company">Business or brand</label><input id="company" value={f.company} onChange={(e) => set("company", e.target.value)} /></div>
       <div className="field"><label htmlFor="email">Email</label><input id="email" type="email" value={f.email} onChange={(e) => set("email", e.target.value)} /></div>
       <div className="field"><label htmlFor="contact">Phone, Slack or other contact</label><input id="contact" value={f.contact} onChange={(e) => set("contact", e.target.value)} /></div>
+      <div className="field full"><label>Your roles for them</label>
+        <div className="row" style={{ gap: 6 }}>{ROLES.map((r) => {
+          const on = f.roles.includes(r.key);
+          return <button key={r.key} type="button" title={r.hint} className={`pill ${on ? "acc" : ""}`} aria-pressed={on} style={{ border: 0, padding: "5px 11px" }} onClick={() => set("roles", on ? f.roles.filter((x) => x !== r.key) : [...f.roles, r.key])}>{r.label}</button>;
+        })}</div>
+        <small className="muted">Their portal only shows the tools these roles use. Social media manager adds the content calendar.</small>
+      </div>
+      <div className="field full"><label className="row" style={{ gap: 8, cursor: "pointer" }}><input type="checkbox" checked={f.personal} onChange={(e) => set("personal", e.target.checked)} style={{ width: "auto" }} />This is my own portal (no invoices, rates or EOD reports)</label></div>
       <div className="field full"><label htmlFor="services">What you do for them</label><input id="services" placeholder="Admin support, social media, video editing" value={f.services} onChange={(e) => set("services", e.target.value)} /></div>
       <div className="field"><label htmlFor="status">Status</label><select id="status" value={f.status} onChange={(e) => set("status", e.target.value as Form["status"])}>{["Active", "Lead", "Paused", "Past"].map((s) => <option key={s}>{s}</option>)}</select></div>
       <div className="field"><label htmlFor="source">Where you found them</label><select id="source" value={f.source} onChange={(e) => set("source", e.target.value)}>{["", "OnlineJobs.ph", "Upwork", "LinkedIn", "Facebook group", "Referral", "Direct", "Other"].map((s) => <option key={s} value={s}>{s || "—"}</option>)}</select></div>
