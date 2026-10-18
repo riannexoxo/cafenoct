@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: { default: brand.name, template: `%s · ${brand.name}` },
   description: brand.description,
   appleWebApp: { capable: true, title: brand.name, statusBarStyle: "default" },
-  icons: { apple: "/brand/apple-touch-icon.png" },
+  icons: { apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }] },
 };
 
 export const viewport: Viewport = {
