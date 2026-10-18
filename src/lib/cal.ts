@@ -6,7 +6,16 @@ import type { Client } from "@/lib/types";
 export const HH = 48; // pixels per hour on the calendar grid
 
 export type TimeEntry = { id: string; client_id: string | null; started_at: string; minutes: number; note: string; source: string };
-export type CalEvent = { id: string; client_id: string | null; title: string; starts_at: string; ends_at: string; notes: string };
+export type CalEvent = {
+  id: string; client_id: string | null; title: string; starts_at: string; ends_at: string; notes: string;
+  kind: "block" | "meeting"; link: string; repeat: "none" | "daily" | "weekdays" | "weekly" | "monthly";
+  repeat_days: number[]; repeat_until: string | null; skip_dates: string[]; tz: string;
+};
+export const EVENT_COLS = "id,client_id,title,starts_at,ends_at,notes,kind,link,repeat,repeat_days,repeat_until,skip_dates,tz";
+// An event from Google Calendar (read only).
+export type GEvent = { id: string; title: string; start: string; end: string; allDay: boolean; link: string; location: string; description: string };
+// One showing of an event: a one-off event, one day of a repeating series, or a Google event.
+export type Occurrence = { ev: CalEvent; key: string; start: number; end: number; occ: string | null; google?: GEvent };
 
 export const toMin = (s: string | null | undefined) => { if (!s) return 0; const [h, m] = s.split(":").map(Number); return h * 60 + (m || 0); };
 export const minToTime = (m: number) => { const x = Math.max(0, Math.min(m, 1439)); return `${pad(Math.floor(x / 60))}:${pad(x % 60)}`; };
@@ -79,3 +88,40 @@ export function nextDue(repeat: string, after: string, c?: Client) {
   }
   return addDays(after, 1);
 }
+
+// Does a repeating series happen on date dd (in the series' own time zone)?
+function occursOn(ev: CalEvent, dd: string, first: string) {
+  const wd = weekday(dd);
+  switch (ev.repeat) {
+    case "daily": return true;
+    case "weekdays": return wd <= 5;
+    case "weekly": return ev.repeat_days?.length ? ev.repeat_days.includes(wd) : wd === weekday(first);
+    case "monthly": return dd.slice(8) === first.slice(8);
+    default: return false;
+  }
+}
+
+// Every showing of these events between two moments. Repeating series repeat in their own time zone,
+// so a 10am Eastern meeting stays at 10am Eastern through daylight saving changes.
+export function expandEvents(events: CalEvent[], fromMs: number, toMs: number, fallbackTz = deviceTz()) {
+  const out: Occurrence[] = [];
+  for (const ev of events) {
+    const s = Date.parse(ev.starts_at), len = Math.max(15 * 60000, Date.parse(ev.ends_at) - s);
+    if (!ev.repeat || ev.repeat === "none") {
+      if (s + len > fromMs && s < toMs) out.push({ ev, key: ev.id, start: s, end: s + len, occ: null });
+      continue;
+    }
+    const tz = ev.tz || fallbackTz, first = partsIn(s, tz), last = partsIn(toMs, tz).date;
+    let dd = partsIn(Math.max(s, fromMs - len), tz).date;
+    for (let i = 0; dd <= last && i < 400; i++, dd = addDays(dd, 1)) {
+      if (dd < first.date) continue;
+      if (ev.repeat_until && dd > ev.repeat_until) break;
+      if (ev.skip_dates?.includes(dd) || !occursOn(ev, dd, first.date)) continue;
+      const a = zonedMs(dd, first.min, tz);
+      if (a + len > fromMs && a < toMs) out.push({ ev, key: `${ev.id}:${dd}`, start: a, end: a + len, occ: dd });
+    }
+  }
+  return out;
+}
+
+export const REPEAT_LABELS: Record<CalEvent["repeat"], string> = { none: "Does not repeat", daily: "Every day", weekdays: "Every weekday (Mon–Fri)", weekly: "Every week", monthly: "Every month" };

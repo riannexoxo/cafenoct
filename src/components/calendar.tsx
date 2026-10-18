@@ -5,27 +5,27 @@ import { useRouter } from "next/navigation";
 import { supabase, useRows } from "@/lib/use-rows";
 import { addDays, parseYmd, weekStartYmd, weekday } from "@/lib/dates";
 import { deviceTz, partsIn, todayIn, tzShort, zonedIso } from "@/lib/tz";
-import { HH, fmtClock, hm, isoAt, laneLayout, localParts, minToTime, planBlocks, snap15, type CalEvent, type TimeEntry } from "@/lib/cal";
+import { EVENT_COLS, HH, expandEvents, fmtClock, hm, isoAt, laneLayout, localParts, minToTime, planBlocks, snap15, type CalEvent, type GEvent, type Occurrence, type TimeEntry } from "@/lib/cal";
 import { hrs } from "@/lib/format";
 import { toast } from "@/lib/toast";
 import { clientLabel, type Client } from "@/lib/types";
 import { useTimers } from "./timers";
 import EventForm, { type EventDraft } from "./event-form";
+import EventCard from "./event-card";
 import TimeForm from "./time-form";
 import Seg from "./seg";
 import Icon from "./icon";
 
 type Item =
   | { k: "plan"; id: string; c: Client; s: number; e: number; their: string }
-  | { k: "ev"; id: string; ev: CalEvent; s: number; e: number }
+  | { k: "ev"; id: string; ev: CalEvent; o: Occurrence; fixed: boolean; s: number; e: number }
   | { k: "wk"; id: string; x: TimeEntry; s: number; e: number };
 type Placed = Item & { lane: number; lanes: number };
 type Drag = { mode: "create" | "move" | "resize"; it?: Placed; y0: number; a: number; s0: number; e0: number; s: number; e: number; date: string; moved: boolean };
-type Form = { kind: "ev"; draft: EventDraft } | { kind: "wk"; draft: Partial<TimeEntry> } | null;
+type Form = { kind: "ev"; draft: EventDraft } | { kind: "wk"; draft: Partial<TimeEntry> } | { kind: "card"; o: Occurrence } | null;
 
 const noop = () => () => {};
 const ENTRY_COLS = "id,client_id,started_at,minutes,note,source";
-const EVENT_COLS = "id,client_id,title,starts_at,ends_at,notes";
 
 // Week or day grid: usual client hours, blocked time, logged time and running timers.
 // tz is the time zone the grid is drawn in: yours on My calendar, the client's in their portal.
@@ -62,11 +62,26 @@ function Grid({ clients, clientId, zone }: { clients: Client[]; clientId?: strin
     return q;
   }, ["time_entries"]);
   const [events, reloadEvents, setEvents] = useRows<CalEvent>(`cal-ev:${scope}`, (s) => {
-    let q = s.from("events").select(EVENT_COLS).gte("starts_at", from).lt("starts_at", to);
+    // One-off events in view, plus every repeating series that started before the end of the view.
+    let q = s.from("events").select(EVENT_COLS).or(`and(starts_at.gte.${from},starts_at.lt.${to}),and(repeat.neq.none,starts_at.lt.${to})`);
     if (clientId) q = q.eq("client_id", clientId);
     return q;
   }, ["events"]);
   const [timers] = useTimers();
+  const [google, setGoogle] = useState<GEvent[]>([]);
+
+  // Google Calendar events (My calendar only), refreshed every few minutes.
+  useEffect(() => {
+    if (clientId) return;
+    let alive = true;
+    const load = () => fetch(`/api/gcal?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { events?: GEvent[] } | null) => { if (alive && j?.events) setGoogle(j.events); })
+      .catch(() => {});
+    load();
+    const i = setInterval(load, 5 * 60000);
+    return () => { alive = false; clearInterval(i); };
+  }, [from, to, clientId]);
 
   useEffect(() => {
     const h = new Date().getHours();
@@ -79,16 +94,24 @@ function Grid({ clients, clientId, zone }: { clients: Client[]; clientId?: strin
   const name = (id: string | null) => { const c = clients.find((x) => x.id === id); return c ? clientLabel(c) : "No client"; };
   const mine = <T extends { client_id: string | null }>(x: T) => !clientId || x.client_id === clientId;
 
+  const gAsEvent = (g: GEvent): CalEvent => ({ id: `g:${g.id}`, client_id: null, title: g.title, starts_at: g.start, ends_at: g.end, notes: g.description, kind: "meeting", link: g.link, repeat: "none", repeat_days: [], repeat_until: null, skip_dates: [], tz: "" });
+  const occurrences: Occurrence[] = [
+    ...expandEvents((events ?? []).filter(mine), Date.parse(from), Date.parse(to), tz),
+    ...google.filter((g) => !g.allDay).map((g) => ({ ev: gAsEvent(g), key: `g:${g.id}`, start: Date.parse(g.start), end: Date.parse(g.end), occ: null, google: g })),
+  ];
+  const allDay = google.filter((g) => g.allDay);
+
   const cols = days.map((d) => {
     const plan = planBlocks(d, clients, tz).filter((p) => !clientId || p.c.id === clientId).map((p): Item => ({
       k: "plan", id: `plan:${p.c.id}:${p.theirS}:${p.s}`, c: p.c, s: p.s, e: p.e,
       their: p.tz !== tz ? `${fmtClock(p.theirS)}–${fmtClock(p.theirE)} ${tzShort(p.tz)}` : "",
     }));
-    const evs = (events ?? []).filter(mine).flatMap((ev): Item[] => {
-      const s = localParts(ev.starts_at, tz), e = localParts(ev.ends_at, tz);
+    const evs = occurrences.flatMap((o): Item[] => {
+      const s = partsIn(o.start, tz), e = partsIn(o.end, tz);
       if (s.date !== d) return [];
-      return [{ k: "ev", id: ev.id, ev, s: s.min, e: Math.max(s.min + 15, e.date === d ? e.min : 1440) }];
+      return [{ k: "ev", id: o.key, ev: o.ev, o, fixed: !!o.google || o.occ !== null, s: s.min, e: Math.max(s.min + 15, e.date === d ? e.min : 1440) }];
     });
+    const days_ = allDay.filter((g) => g.start.slice(0, 10) <= d && d < g.end.slice(0, 10));
     const worked = (entries ?? []).filter(mine).flatMap((x): Item[] => {
       const p = localParts(x.started_at, tz);
       return p.date === d ? [{ k: "wk", id: x.id, x, s: p.min, e: Math.min(1440, p.min + Math.max(10, x.minutes)) }] : [];
@@ -96,7 +119,7 @@ function Grid({ clients, clientId, zone }: { clients: Client[]; clientId?: strin
     const lives = d === t ? (timers ?? []).filter(mine).map((tm) => { const p = localParts(tm.started_at, tz); return { tm, s: p.date === d ? p.min : 0, e: Math.max(nowM, 1) }; }) : [];
     const planned = plan.reduce((a, p) => a + p.e - p.s, 0);
     const logged = worked.reduce((a, w) => a + (w.k === "wk" ? w.x.minutes : 0), 0);
-    return { d, left: laneLayout([...plan, ...evs]) as Placed[], right: laneLayout(worked) as Placed[], lives, planned, logged };
+    return { d, left: laneLayout([...plan, ...evs]) as Placed[], right: laneLayout(worked) as Placed[], lives, planned, logged, allDay: days_ };
   });
   const totalPlanned = cols.reduce((a, c) => a + c.planned, 0), totalLogged = cols.reduce((a, c) => a + c.logged, 0);
 
@@ -110,7 +133,7 @@ function Grid({ clients, clientId, zone }: { clients: Client[]; clientId?: strin
     let next: Drag;
     if (blk) {
       const kind = blk.dataset.kind;
-      if (kind !== "ev" && kind !== "wk") return;
+      if (kind !== "ev" && kind !== "wk") return; // repeating and Google events open on click instead
       const it = cols.find((c) => c.d === date)?.[kind === "ev" ? "left" : "right"].find((x) => x.id === blk.dataset.id);
       if (!it) return;
       const s0 = it.s, e0 = it.k === "wk" ? it.s + it.x.minutes : it.e;
@@ -153,7 +176,7 @@ function Grid({ clients, clientId, zone }: { clients: Client[]; clientId?: strin
       return setForm({ kind: "ev", draft: { date: d.date, start: minToTime(s), end: en >= 1440 ? "23:59" : minToTime(en), client_id: clientId ?? null } });
     }
     const it = d.it!;
-    if (!d.moved) return setForm(it.k === "ev" ? { kind: "ev", draft: it.ev } : it.k === "wk" ? { kind: "wk", draft: it.x } : null);
+    if (!d.moved) return setForm(it.k === "ev" ? { kind: "card", o: it.o } : it.k === "wk" ? { kind: "wk", draft: it.x } : null);
     if (it.k === "ev") {
       const patch = { starts_at: isoAt(d.date, d.s, tz), ends_at: isoAt(d.date, d.e, tz) };
       setEvents((r) => (r ?? []).map((x) => (x.id === it.id ? { ...x, ...patch } : x)));
@@ -181,9 +204,14 @@ function Grid({ clients, clientId, zone }: { clients: Client[]; clientId?: strin
       </div>
     );
     if (it.k === "ev") return (
-      <div key={it.id} data-kind="ev" data-id={it.id} className={`cg-b ev${cls}`} style={{ ...box(s, e, it.lane, it.lanes, 0, 58), ["--c" as string]: color(it.ev.client_id, "var(--lilac)") }} role="button" tabIndex={0}
-        onKeyDown={(ev) => { if (ev.key === "Enter") setForm({ kind: "ev", draft: it.ev }); }}>
-        <b>{it.ev.title || name(it.ev.client_id)}</b><small>{fmtClock(s)}–{fmtClock(e)}</small><i className="cg-rs" aria-hidden="true" />
+      <div key={it.id} data-kind={it.fixed ? undefined : "ev"} data-id={it.id} role="button" tabIndex={0}
+        className={`cg-b ev${it.ev.kind === "meeting" ? " meet" : ""}${it.o.google ? " gcal" : ""}${it.fixed ? " fixed" : ""}${cls}`}
+        style={{ ...box(s, e, it.lane, it.lanes, 0, 58), ["--c" as string]: color(it.ev.client_id, "var(--lilac)") }}
+        title={`${it.ev.title || name(it.ev.client_id)}${it.o.google ? " · Google Calendar" : it.o.occ ? " · repeats" : ""}`}
+        onClick={it.fixed ? () => setForm({ kind: "card", o: it.o }) : undefined}
+        onKeyDown={(ev) => { if (ev.key === "Enter") setForm({ kind: "card", o: it.o }); }}>
+        <b>{it.o.occ && <Icon name="repeat" size={10} className="cg-ico" />}{it.ev.link && <Icon name="link" size={10} className="cg-ico" />}{it.ev.title || name(it.ev.client_id)}</b>
+        <small>{fmtClock(s)}–{fmtClock(e)}</small>{!it.fixed && <i className="cg-rs" aria-hidden="true" />}
       </div>
     );
     const minutes = dragging ? e - s : it.x.minutes;
@@ -201,6 +229,7 @@ function Grid({ clients, clientId, zone }: { clients: Client[]; clientId?: strin
     : `${parseYmd(days[0]).toLocaleDateString("en-US", { month: "long", day: "numeric" })} – ${parseYmd(days[6]).toLocaleDateString("en-US", days[0].slice(5, 7) === days[6].slice(5, 7) ? { day: "numeric" } : { month: "long", day: "numeric" })}`;
   const shift = (n: number) => setAnchor(n === 0 ? todayIn(tz) : addDays(anchor, n * (mode === "day" ? 1 : 7)));
   const newBlock = () => setForm({ kind: "ev", draft: { date: days.includes(t) ? t : days[0], client_id: clientId ?? null } });
+  const newMeeting = () => setForm({ kind: "ev", draft: { date: days.includes(t) ? t : days[0], client_id: clientId ?? null, kind: "meeting" } });
 
   return (
     <>
@@ -215,6 +244,7 @@ function Grid({ clients, clientId, zone }: { clients: Client[]; clientId?: strin
           <button className="btn" onClick={() => shift(0)}>Today</button>
           <button className="btn" onClick={() => shift(1)} aria-label={mode === "day" ? "Next day" : "Next week"}><Icon name="right" /></button>
         </div>
+        <button className="btn" onClick={newMeeting}><Icon name="chat" />Meeting</button>
         <button className="btn solid" onClick={newBlock}><Icon name="plus" />Block time</button>
       </div>
       <div className="cg">
@@ -228,6 +258,16 @@ function Grid({ clients, clientId, zone }: { clients: Client[]; clientId?: strin
             </button>
           ))}
         </div>
+        {cols.some((c) => c.allDay.length) && (
+          <div className="cg-head cg-allday" style={{ gridTemplateColumns: grid }}>
+            <span className="small muted" style={{ alignSelf: "center", textAlign: "right", paddingRight: 8, fontSize: 10 }}>All day</span>
+            {cols.map((c) => (
+              <div key={c.d} className="cg-ad">{c.allDay.map((g) => (
+                <button key={g.id} className="cg-chip" onClick={() => setForm({ kind: "card", o: { ev: gAsEvent(g), key: `g:${g.id}`, start: Date.parse(g.start), end: Date.parse(g.end), occ: null, google: g } })}>{g.title}</button>
+              ))}</div>
+            ))}
+          </div>
+        )}
         <div className="cg-scroll" ref={scroller}>
           <div className="cg-body" style={{ gridTemplateColumns: grid, height: 24 * HH }} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={cancel}>
             <div className="cg-hours" aria-hidden="true">{[...Array(24)].map((_, h) => <span key={h} style={{ top: h * HH }}>{h ? fmtClock(h * 60) : ""}</span>)}</div>
@@ -253,10 +293,12 @@ function Grid({ clients, clientId, zone }: { clients: Client[]; clientId?: strin
       <div className="legend">
         <span><i className="lg plan" />Usual client hours</span>
         <span><i className="lg ev" />Blocked time</span>
+        <span><i className="lg meet" />Meetings</span>
         <span><i className="lg wk" />Hours you logged</span>
         <span>Drag on empty space to block time. Drag a block to move it, or pull its bottom edge to resize.</span>
       </div>
       {form?.kind === "ev" && <EventForm ev={form.draft} clients={clients} onClose={() => setForm(null)} onSaved={reloadEvents} tz={tz} />}
+      {form?.kind === "card" && <EventCard o={form.o} clients={clients} tz={tz} onClose={() => setForm(null)} onEdit={(ev) => setForm({ kind: "ev", draft: ev })} onChanged={reloadEvents} />}
       {form?.kind === "wk" && <TimeForm entry={form.draft} clients={clients} onClose={() => setForm(null)} onSaved={reloadEntries} tz={tz} />}
     </>
   );

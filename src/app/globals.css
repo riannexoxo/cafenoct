@@ -612,3 +612,23 @@ img.has-logo { object-fit: cover; background: #FBF7F1; box-shadow: inset 0 0 0 1
 .rep-btn.on { color: var(--rose-ink); background: var(--blush); }
 .rep { color: var(--muted); display: inline-flex; }
 @media (max-width: 520px) { .rep-btn span { display: none; } }
+
+/* Meetings, event details, Google Calendar */
+.cg-b.ev.meet { background: color-mix(in srgb, var(--lavender) 85%, var(--card)); color: var(--lilac-ink); border-left: 3px solid var(--c, var(--lilac)); }
+.cg-b.ev.gcal { border-left-color: var(--lilac); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lilac) 55%, transparent); }
+.cg-b.fixed { cursor: pointer; }
+.cg-b .cg-ico { display: inline-block; vertical-align: -1px; margin-right: 3px; opacity: .75; }
+.legend .lg.meet { background: var(--lavender); border: 1px solid var(--lilac); }
+.cg-allday { border-bottom: 1px solid var(--line); background: var(--card); }
+.cg-ad { border-left: 1px solid var(--line); padding: 3px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cg-chip { all: unset; cursor: pointer; font-size: 10.5px; padding: 2px 6px; border-radius: 6px; background: var(--lavender); color: var(--lilac-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.evc { display: flex; flex-direction: column; gap: 14px; border-left: 3px solid var(--c); padding-left: 14px; }
+.evc h2 { overflow-wrap: anywhere; }
+.evc-rows { display: flex; flex-direction: column; gap: 10px; font-size: 13.5px; }
+.evc-rows > div { display: flex; gap: 10px; align-items: flex-start; }
+.evc-rows svg { flex: none; margin-top: 2px; color: var(--muted); }
+.evc-rows a, .evc-notes a { color: var(--accent-ink); text-decoration: underline; text-underline-offset: 2px; }
+.evc-notes { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 220px; overflow: auto; }
+ol.steps { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; color: var(--muted); }
+ol.steps b { color: var(--ink); font-weight: 500; }
+ol.steps a { color: var(--accent-ink); }
