@@ -105,7 +105,7 @@ export default function Sidebar({ clients, name }: { clients: Client[]; name: st
             <div className="nav-h">Client portals</div>
             {clients.filter((c) => c.status === "Active").map((c) => (
               <Link key={c.id} href={`/clients/${c.id}`}>
-                <span className="nav-dot" style={{ background: c.color }}>{clientLabel(c)[0].toUpperCase()}</span>
+                <ClientAvatar c={c} className="nav-dot" />
                 <span className="ellipsis">{clientLabel(c)}</span>
               </Link>
             ))}

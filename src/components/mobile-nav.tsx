@@ -6,6 +6,7 @@ import { useState } from "react";
 import { clientLabel, type Client } from "@/lib/types";
 import { signOut } from "@/app/(app)/actions";
 import Icon, { type IconName } from "./icon";
+import ClientAvatar from "./client-avatar";
 
 const TABS: [string, string, IconName][] = [
   ["/", "Today", "today"],
@@ -53,7 +54,7 @@ export default function MobileNav({ clients }: { clients: Client[] }) {
                 <div className="sheet-grid">
                   {clients.map((c) => (
                     <Link key={c.id} href={`/clients/${c.id}`}>
-                      <span className="nav-dot" style={{ background: c.color }}>{clientLabel(c)[0].toUpperCase()}</span>
+                      <ClientAvatar c={c} className="nav-dot" />
                       <span>{clientLabel(c)}</span>
                     </Link>
                   ))}
