@@ -22,7 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="wrap">{children}</div>
       </main>
       <MobileNav clients={clients ?? []} />
-      <MoneyPop />
+      <MoneyPop clients={clients ?? []} />
     </div>
   );
 }

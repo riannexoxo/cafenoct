@@ -2,7 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseKey, supabaseUrl } from "@/lib/supabase/env";
 
-const PUBLIC = ["/login", "/auth"];
+// /api/inbox is called by your Gmail script, which signs in with its own private key instead of a session.
+const PUBLIC = ["/login", "/auth", "/api/inbox"];
 
 // Keeps the sign-in session fresh on every request and sends signed-out visitors to the login page.
 export async function proxy(request: NextRequest) {

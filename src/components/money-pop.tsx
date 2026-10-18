@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { money } from "@/lib/format";
-import type { MoneyEvent } from "@/lib/celebrate";
+import { celebrate, type MoneyEvent } from "@/lib/celebrate";
+import { supabase } from "@/lib/use-rows";
+import { clientLabel, type Client } from "@/lib/types";
 
 // A small notification when money lands: a coin drops into a wallet while the amount counts up.
-export default function MoneyPop() {
+export default function MoneyPop({ clients = [] }: { clients?: Client[] }) {
   const [pop, setPop] = useState<(MoneyEvent & { key: number }) | null>(null);
   const [shown, setShown] = useState(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -19,6 +21,25 @@ export default function MoneyPop() {
     };
     window.addEventListener("cafenoct:money", on);
     return () => { window.removeEventListener("cafenoct:money", on); if (timer.current) clearTimeout(timer.current); };
+  }, []);
+
+  // Payments added from your PayPal or Wise emails pop up live, on whatever page you're on.
+  const names = useRef(clients);
+  useEffect(() => { names.current = clients; });
+  useEffect(() => {
+    const seen = new Set<string>();
+    type Row = { id: string; status: string; source_ref: string | null; paid_amount: number | null; currency: string; client_id: string | null; number: string; method: string; updated_at: string };
+    const ch = supabase().channel(`money-in:${Math.random().toString(36).slice(2)}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "invoices" }, (p) => {
+        const n = p.new as Partial<Row>;
+        if (!n?.id || n.status !== "paid" || !n.source_ref || seen.has(n.id)) return;
+        if (Date.now() - Date.parse(n.updated_at ?? "") > 180000) return;
+        seen.add(n.id);
+        const c = names.current.find((x) => x.id === n.client_id);
+        celebrate({ amount: Number(n.paid_amount) || 0, currency: n.currency ?? "USD", title: c ? `From ${clientLabel(c)}` : `Money in via ${n.method}`, detail: `${n.number} · from your ${n.method} email` });
+      })
+      .subscribe();
+    return () => { supabase().removeChannel(ch); };
   }, []);
 
   // Count the amount up from zero.

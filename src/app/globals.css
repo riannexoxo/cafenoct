@@ -710,3 +710,6 @@ button.li.act:hover { background: var(--tint); }
 .act-ico.wait { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
 .act-ico.move { background: var(--lavender); color: var(--lilac-ink); }
 @media (prefers-reduced-motion: reduce) { .spark-line { animation: none; stroke-dasharray: none; } }
+.code-box { position: relative; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); }
+.code-box .btn { position: absolute; top: 10px; right: 10px; }
+.code-box pre { margin: 0; padding: 16px; max-height: 280px; overflow: auto; font: 400 11.5px/1.55 var(--mono); white-space: pre; }
