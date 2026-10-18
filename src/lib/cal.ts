@@ -19,7 +19,7 @@ export const localParts = (iso: string, tz = deviceTz()) => partsIn(iso, tz);
 // A date plus minutes in a time zone, back to a moment Supabase can store. 1440 minutes rolls to the next day.
 export const isoAt = (date: string, min: number, tz = deviceTz()) => zonedIso(date, min, tz);
 
-export type Plan = { c: Client; s: number; e: number; tz: string; theirS: number; theirE: number };
+export type Plan = { c: Client; s: number; e: number; tz: string; theirS: number; theirE: number; starts: boolean };
 // Usual client hours that fall on day d, seen from time zone tz. Each client's hours are in their own
 // time zone, so 9am–4pm Eastern lands in the evening in Manila and can spill into the next day.
 // Clients without a start time stack from 8:00 their time.
@@ -39,7 +39,7 @@ export function planBlocks(d: string, clients: Client[], tz = deviceTz()) {
       if (!fixed) cursors.set(key, s + len);
       const a = zonedMs(cd, s, ctz), b = a + len * 60000;
       if (b <= dayStart || a >= dayEnd) continue;
-      out.push({ c, tz: ctz, theirS: s, theirE: s + len, s: Math.round((Math.max(a, dayStart) - dayStart) / 60000), e: Math.round((Math.min(b, dayEnd) - dayStart) / 60000) });
+      out.push({ c, tz: ctz, theirS: s, theirE: s + len, starts: a >= dayStart, s: Math.round((Math.max(a, dayStart) - dayStart) / 60000), e: Math.round((Math.min(b, dayEnd) - dayStart) / 60000) });
     }
   }
   return out.sort((x, y) => x.s - y.s);
@@ -58,4 +58,24 @@ export function laneLayout<T extends { s: number; e: number }>(items: T[]) {
   out.forEach((it) => { if (it.s >= groupEnd) { flush(); groupEnd = it.e; } else groupEnd = Math.max(groupEnd, it.e); group.push(it); });
   flush();
   return out;
+}
+
+// Does this client's usual shift start on day d (in your time)? A night shift that runs past
+// midnight counts for the day it starts.
+export const worksOn = (d: string, c: Client) => planBlocks(d, [c]).some((p) => p.starts);
+
+// The next date after `after` that a repeating task should come back on.
+export function nextDue(repeat: string, after: string, c?: Client) {
+  if (repeat === "weekly") return addDays(after, 7);
+  if (repeat === "monthly") {
+    const [y, m, d] = after.split("-").map(Number);
+    const last = new Date(y, m + 1, 0).getDate();
+    return `${m === 12 ? y + 1 : y}-${pad(m === 12 ? 1 : m + 1)}-${pad(Math.min(d, last))}`;
+  }
+  const flexible = !c || !c.work_days.length || !c.hours_per_day;
+  for (let i = 1; i <= 14; i++) {
+    const d = addDays(after, i);
+    if (flexible || worksOn(d, c)) return d;
+  }
+  return addDays(after, 1);
 }

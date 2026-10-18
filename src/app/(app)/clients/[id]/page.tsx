@@ -30,14 +30,18 @@ export default async function ClientPortal({ params }: { params: Promise<{ id: s
             {c.timezone && <div style={{ marginTop: 8 }}><TheirTime tz={c.timezone} name={c.name.split(" ")[0]} /></div>}
           </div>
         </div>
-        <Link className="btn" href={`/clients/${c.id}/edit`}>Edit</Link>
+        <div className="row">
+          <Link className="btn" href={`/clients/${c.id}/calendar`}><Icon name="schedule" />Calendar</Link>
+          <Link className="btn solid" href={`/clients/${c.id}/reports`}><Icon name="chat" />{c.report_cadence === "Weekly" ? "Weekly report" : "EOD report"}</Link>
+          <Link className="btn" href={`/clients/${c.id}/edit`}>Edit</Link>
+        </div>
       </div>
       <WeekStats clients={clients ?? []} goal={c.weekly_hours ?? 0} clientId={c.id} />
       <div className="grid g2" style={{ alignItems: "start" }}>
         <TodoList clients={clients ?? []} clientId={c.id} />
         <Timers clients={clients ?? []} clientId={c.id} />
       </div>
-      <div className="card small muted row" style={{ gap: 8 }}><Icon name="spark" size={16} />Projects, content, invoices, docs and EOD reports for this client are next to move over.</div>
+      <div className="card small muted row" style={{ gap: 8 }}><Icon name="spark" size={16} />Projects, content, invoices and docs for this client are next to move over.</div>
     </>
   );
 }

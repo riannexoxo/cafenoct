@@ -608,3 +608,7 @@ img.has-logo { object-fit: cover; background: #FBF7F1; box-shadow: inset 0 0 0 1
 .cg-b small.their { opacity: .65; }
 @media (max-width: 640px) { .clocks { grid-template-columns: repeat(2, minmax(0, 1fr)); } .clock { padding: 8px 10px; } .clock-t b { font-size: 16px; } }
 .clock-t b i { font: normal 11px var(--font); color: var(--accent-ink); letter-spacing: .04em; }
+.rep-btn { color: var(--muted); padding: 5px 9px; gap: 5px; }
+.rep-btn.on { color: var(--rose-ink); background: var(--blush); }
+.rep { color: var(--muted); display: inline-flex; }
+@media (max-width: 520px) { .rep-btn span { display: none; } }
