@@ -3,7 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { supabase } from "@/lib/use-rows";
+import { ZONES } from "@/lib/tz";
 import type { Client } from "@/lib/types";
+import ClientAvatar from "./client-avatar";
 
 const COLORS = ["#976A4B", "#8C9A7B", "#B88A8A", "#7F8FA6", "#C9A66B", "#8E7CA0", "#6E8F8B", "#C39A78"];
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -16,15 +18,33 @@ export default function ClientForm({ initial }: { initial?: Partial<Form> & { id
   const [f, setF] = useState<Form>({
     name: "", company: "", email: "", contact: "", services: "", status: "Active", source: "", rate: null, rate_type: "Hourly",
     currency: "USD", work_days: [], hours_per_day: null, weekly_hours: null, start_time: null, report_cadence: "",
-    color: COLORS[0], links: "", notes: "", ...initial,
+    color: COLORS[0], links: "", notes: "", timezone: "", logo_url: "", ...initial,
   } as Form);
   const [msg, setMsg] = useState("");
+  const [uploading, setUploading] = useState(false);
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((x) => ({ ...x, [k]: v }));
   const num = (v: string) => (v === "" ? null : Number(v));
   const toggleDay = (d: number) => {
     const days = f.work_days.includes(d) ? f.work_days.filter((x) => x !== d) : [...f.work_days, d].sort();
     setF((x) => ({ ...x, work_days: days, weekly_hours: days.length && x.hours_per_day ? days.length * x.hours_per_day : x.weekly_hours }));
   };
+
+  // Logos go to your own folder in the "logos" storage bucket.
+  async function upload(file: File | undefined) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return setMsg("Choose an image file (PNG, JPG, WebP or SVG).");
+    if (file.size > 2 * 1024 * 1024) return setMsg("That image is over 2 MB. Try a smaller one.");
+    setUploading(true);
+    setMsg("Uploading logo…");
+    const { data: auth } = await supabase().auth.getSession();
+    const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const path = `${auth.session?.user.id}/${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase().storage.from("logos").upload(path, file, { contentType: file.type });
+    setUploading(false);
+    if (error) return setMsg("Could not upload the logo. Try again.");
+    set("logo_url", supabase().storage.from("logos").getPublicUrl(path).data.publicUrl);
+    setMsg("Logo added. Save to keep it.");
+  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -59,7 +79,23 @@ export default function ClientForm({ initial }: { initial?: Partial<Form> & { id
       </div>
       <div className="field"><label htmlFor="hpd">Hours per work day</label><input id="hpd" type="number" min="0" step="0.5" value={f.hours_per_day ?? ""} onChange={(e) => { const h = num(e.target.value); setF((x) => ({ ...x, hours_per_day: h, weekly_hours: x.work_days.length && h ? x.work_days.length * h : x.weekly_hours })); }} /></div>
       <div className="field"><label htmlFor="weekly">Weekly hours target</label><input id="weekly" type="number" min="0" step="0.5" value={f.weekly_hours ?? ""} onChange={(e) => set("weekly_hours", num(e.target.value))} /></div>
-      <div className="field"><label htmlFor="start">Usual start time</label><input id="start" type="time" value={f.start_time?.slice(0, 5) ?? ""} onChange={(e) => set("start_time", e.target.value || null)} /></div>
+      <div className="field"><label htmlFor="tz">Their time zone</label><select id="tz" value={f.timezone} onChange={(e) => set("timezone", e.target.value)}>
+        <option value="">Same as mine</option>
+        {!ZONES.some(([z]) => z === f.timezone) && f.timezone && <option value={f.timezone}>{f.timezone}</option>}
+        {ZONES.map(([z, l]) => <option key={z} value={z}>{l}</option>)}
+      </select></div>
+      <div className="field"><label htmlFor="start">Usual start time{f.timezone ? " (their time)" : ""}</label><input id="start" type="time" value={f.start_time?.slice(0, 5) ?? ""} onChange={(e) => set("start_time", e.target.value || null)} /></div>
+      <div className="field full"><label>Logo</label>
+        <div className="row" style={{ gap: 12 }}>
+          <ClientAvatar c={{ ...f, name: f.name || "?" }} size={44} />
+          <label className="btn small" style={{ cursor: "pointer" }}>
+            <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif" hidden disabled={uploading} onChange={(e) => { upload(e.target.files?.[0]); e.target.value = ""; }} />
+            {f.logo_url ? "Change logo" : "Upload logo"}
+          </label>
+          {f.logo_url && <button type="button" className="btn small ghost" onClick={() => set("logo_url", "")}>Remove</button>}
+          <span className="small muted">Square images look best. Up to 2 MB.</span>
+        </div>
+      </div>
       <div className="field"><label>Color</label>
         <div className="row" style={{ gap: 6 }}>{COLORS.map((c) => (
           <button key={c} type="button" aria-label={`Color ${c}`} aria-pressed={f.color === c} onClick={() => set("color", c)} style={{ width: 26, height: 26, borderRadius: "50%", background: c, border: `2px solid ${f.color === c ? "var(--ink)" : "transparent"}` }} />
@@ -70,7 +106,7 @@ export default function ClientForm({ initial }: { initial?: Partial<Form> & { id
       <div className="modal-foot full">
         <span className="small muted left" role="status">{msg}</span>
         <button type="button" className="btn" onClick={() => router.back()}>Cancel</button>
-        <button type="submit" className="btn solid">{initial?.id ? "Save changes" : "Create client"}</button>
+        <button type="submit" className="btn solid" disabled={uploading}>{initial?.id ? "Save changes" : "Create client"}</button>
       </div>
     </form>
   );

@@ -16,11 +16,10 @@ const TABS: [string, string, IconName][] = [
 const ALL: [string, string, IconName][] = [
   ["/time", "Time", "time"],
   ["/focus", "Focus", "focus"],
-  ["/money", "Money", "money"],
+  ["/invoices", "Invoices", "money"],
   ["/projects", "Projects", "projects"],
   ["/docs", "Docs", "docs"],
   ["/content", "Content", "content"],
-  ["/jobs", "Job hunt", "apps"],
   ["/automations", "Automations", "auto"],
   ["/settings", "Settings", "settings"],
 ];

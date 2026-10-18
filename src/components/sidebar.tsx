@@ -8,13 +8,13 @@ import { clientLabel, type Client } from "@/lib/types";
 import { rateText } from "@/lib/format";
 import { signOut } from "@/app/(app)/actions";
 import Icon, { type IconName } from "./icon";
+import ClientAvatar from "./client-avatar";
 
 const ME: [string, string, IconName][] = [
   ["/calendar", "My calendar", "schedule"],
   ["/time", "Time", "time"],
   ["/focus", "Focus", "focus"],
-  ["/money", "Money", "money"],
-  ["/jobs", "Job hunt", "apps"],
+  ["/invoices", "Invoices", "money"],
 ];
 const WORKSPACE: [string, string, IconName][] = [
   ["/projects", "Projects", "projects"],
@@ -28,7 +28,7 @@ const PORTAL: [string, string, IconName][] = [
   ["/work", "Work", "tasks"],
   ["/calendar", "Calendar", "schedule"],
   ["/content", "Content", "content"],
-  ["/money", "Money", "money"],
+  ["/invoices", "Invoices", "money"],
   ["/docs", "Docs", "docs"],
   ["/reports", "EOD reports", "chat"],
 ];
@@ -58,7 +58,7 @@ export default function Sidebar({ clients, name }: { clients: Client[]; name: st
       <div className="acct" ref={box}>
         <button className="brand acct-btn" aria-haspopup="true" aria-expanded={open} onClick={() => setOpen(!open)}>
           {current ? (
-            <span className="acct-av" style={{ background: current.color }}>{clientLabel(current)[0].toUpperCase()}</span>
+            <ClientAvatar c={current} className="acct-av" />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={brand.logo} alt="" className="brand-logo" />
@@ -80,7 +80,7 @@ export default function Sidebar({ clients, name }: { clients: Client[]; name: st
             <div className="acct-h">Client accounts</div>
             {clients.map((c) => (
               <Link key={c.id} href={`/clients/${c.id}`} className={`acct-i ${current?.id === c.id ? "on" : ""}`}>
-                <span className="acct-av" style={{ background: c.color }}>{clientLabel(c)[0].toUpperCase()}</span>
+                <ClientAvatar c={c} className="acct-av" />
                 <span><b>{clientLabel(c)}</b><small>{c.company ? c.name : rateText(c)}</small></span>
               </Link>
             ))}

@@ -7,6 +7,8 @@ import Icon from "@/components/icon";
 import WeekStats from "@/components/week-stats";
 import TodoList from "@/components/todo-list";
 import Timers from "@/components/timers";
+import ClientAvatar from "@/components/client-avatar";
+import { TheirTime } from "@/components/client-clocks";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -20,11 +22,12 @@ export default async function ClientPortal({ params }: { params: Promise<{ id: s
     <>
       <div className="head portal-band" style={{ ["--c" as string]: c.color }}>
         <div className="row" style={{ flexWrap: "nowrap", gap: 16, minWidth: 0 }}>
-          <span className="avatar" style={{ background: c.color }}>{clientLabel(c)[0].toUpperCase()}</span>
+          <ClientAvatar c={c} />
           <div style={{ minWidth: 0 }}>
             <div className="eyebrow">Client portal · {rateText(c)}{schedule ? ` · ${schedule}` : ""}</div>
             <h1 style={{ overflowWrap: "anywhere" }}>{clientLabel(c)}</h1>
             <p>{c.company ? c.name : ""}{c.services ? `${c.company ? " · " : ""}${c.services}` : ""}</p>
+            {c.timezone && <div style={{ marginTop: 8 }}><TheirTime tz={c.timezone} name={c.name.split(" ")[0]} /></div>}
           </div>
         </div>
         <Link className="btn" href={`/clients/${c.id}/edit`}>Edit</Link>
@@ -34,7 +37,7 @@ export default async function ClientPortal({ params }: { params: Promise<{ id: s
         <TodoList clients={clients ?? []} clientId={c.id} />
         <Timers clients={clients ?? []} clientId={c.id} />
       </div>
-      <div className="card small muted row" style={{ gap: 8 }}><Icon name="spark" size={16} />Projects, content, money, docs and EOD reports for this client are next to move over.</div>
+      <div className="card small muted row" style={{ gap: 8 }}><Icon name="spark" size={16} />Projects, content, invoices, docs and EOD reports for this client are next to move over.</div>
     </>
   );
 }

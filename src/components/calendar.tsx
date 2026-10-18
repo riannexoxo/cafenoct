@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { supabase, useRows } from "@/lib/use-rows";
-import { addDays, parseYmd, today, weekStartYmd, weekday } from "@/lib/dates";
+import { addDays, parseYmd, weekStartYmd, weekday } from "@/lib/dates";
+import { deviceTz, partsIn, todayIn, tzShort, zonedIso } from "@/lib/tz";
 import { HH, fmtClock, hm, isoAt, laneLayout, localParts, minToTime, planBlocks, snap15, type CalEvent, type TimeEntry } from "@/lib/cal";
 import { hrs } from "@/lib/format";
 import { toast } from "@/lib/toast";
@@ -15,7 +16,7 @@ import Seg from "./seg";
 import Icon from "./icon";
 
 type Item =
-  | { k: "plan"; id: string; c: Client; s: number; e: number }
+  | { k: "plan"; id: string; c: Client; s: number; e: number; their: string }
   | { k: "ev"; id: string; ev: CalEvent; s: number; e: number }
   | { k: "wk"; id: string; x: TimeEntry; s: number; e: number };
 type Placed = Item & { lane: number; lanes: number };
@@ -27,11 +28,12 @@ const ENTRY_COLS = "id,client_id,started_at,minutes,note,source";
 const EVENT_COLS = "id,client_id,title,starts_at,ends_at,notes";
 
 // Week or day grid: usual client hours, blocked time, logged time and running timers.
-export default function Calendar({ clients, clientId }: { clients: Client[]; clientId?: string }) {
+// tz is the time zone the grid is drawn in: yours on My calendar, the client's in their portal.
+export default function Calendar({ clients, clientId, tz }: { clients: Client[]; clientId?: string; tz?: string }) {
   // Dates depend on where you are, so the grid draws only on your device.
   const ready = useSyncExternalStore(noop, () => true, () => false);
   if (!ready) return <div className="cg skel" style={{ height: "min(68vh, 760px)" }} aria-busy="true" />;
-  return <Grid clients={clients} clientId={clientId} />;
+  return <Grid clients={clients} clientId={clientId} zone={tz} />;
 }
 
 function useMinuteClock() {
@@ -40,10 +42,11 @@ function useMinuteClock() {
   return now;
 }
 
-function Grid({ clients, clientId }: { clients: Client[]; clientId?: string }) {
+function Grid({ clients, clientId, zone }: { clients: Client[]; clientId?: string; zone?: string }) {
   const router = useRouter();
+  const [tz] = useState(() => zone || deviceTz());
   const [mode, setMode] = useState<"day" | "week">(() => (window.innerWidth < 760 ? "day" : "week"));
-  const [anchor, setAnchor] = useState(today);
+  const [anchor, setAnchor] = useState(() => todayIn(tz));
   const [form, setForm] = useState<Form>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
   const dragRef = useRef<Drag | null>(null);
@@ -51,7 +54,7 @@ function Grid({ clients, clientId }: { clients: Client[]; clientId?: string }) {
   const now = useMinuteClock();
 
   const days = mode === "day" ? [anchor] : [...Array(7)].map((_, i) => addDays(weekStartYmd(anchor), i));
-  const from = parseYmd(days[0]).toISOString(), to = parseYmd(addDays(days[days.length - 1], 1)).toISOString();
+  const from = zonedIso(days[0], 0, tz), to = zonedIso(addDays(days[days.length - 1], 1), 0, tz);
   const scope = `${clientId ?? "all"}:${days[0]}:${days.length}`;
   const [entries, reloadEntries, setEntries] = useRows<TimeEntry>(`cal-time:${scope}`, (s) => {
     let q = s.from("time_entries").select(ENTRY_COLS).gte("started_at", from).lt("started_at", to);
@@ -70,24 +73,27 @@ function Grid({ clients, clientId }: { clients: Client[]; clientId?: string }) {
     if (scroller.current) scroller.current.scrollTop = Math.max(0, Math.min(h - 2, 7)) * HH;
   }, []);
 
-  const t = today();
-  const nowM = now.getHours() * 60 + now.getMinutes();
+  const t = todayIn(tz);
+  const nowM = partsIn(now.getTime(), tz).min;
   const color = (id: string | null, fallback: string) => clients.find((c) => c.id === id)?.color ?? fallback;
   const name = (id: string | null) => { const c = clients.find((x) => x.id === id); return c ? clientLabel(c) : "No client"; };
   const mine = <T extends { client_id: string | null }>(x: T) => !clientId || x.client_id === clientId;
 
   const cols = days.map((d) => {
-    const plan = planBlocks(d, clients).filter((p) => !clientId || p.c.id === clientId).map((p): Item => ({ k: "plan", id: `plan:${p.c.id}`, c: p.c, s: p.s, e: p.e }));
+    const plan = planBlocks(d, clients, tz).filter((p) => !clientId || p.c.id === clientId).map((p): Item => ({
+      k: "plan", id: `plan:${p.c.id}:${p.theirS}:${p.s}`, c: p.c, s: p.s, e: p.e,
+      their: p.tz !== tz ? `${fmtClock(p.theirS)}–${fmtClock(p.theirE)} ${tzShort(p.tz)}` : "",
+    }));
     const evs = (events ?? []).filter(mine).flatMap((ev): Item[] => {
-      const s = localParts(ev.starts_at), e = localParts(ev.ends_at);
+      const s = localParts(ev.starts_at, tz), e = localParts(ev.ends_at, tz);
       if (s.date !== d) return [];
       return [{ k: "ev", id: ev.id, ev, s: s.min, e: Math.max(s.min + 15, e.date === d ? e.min : 1440) }];
     });
     const worked = (entries ?? []).filter(mine).flatMap((x): Item[] => {
-      const p = localParts(x.started_at);
+      const p = localParts(x.started_at, tz);
       return p.date === d ? [{ k: "wk", id: x.id, x, s: p.min, e: Math.min(1440, p.min + Math.max(10, x.minutes)) }] : [];
     });
-    const lives = d === t ? (timers ?? []).filter(mine).map((tm) => { const p = localParts(tm.started_at); return { tm, s: p.date === d ? p.min : 0, e: Math.max(nowM, 1) }; }) : [];
+    const lives = d === t ? (timers ?? []).filter(mine).map((tm) => { const p = localParts(tm.started_at, tz); return { tm, s: p.date === d ? p.min : 0, e: Math.max(nowM, 1) }; }) : [];
     const planned = plan.reduce((a, p) => a + p.e - p.s, 0);
     const logged = worked.reduce((a, w) => a + (w.k === "wk" ? w.x.minutes : 0), 0);
     return { d, left: laneLayout([...plan, ...evs]) as Placed[], right: laneLayout(worked) as Placed[], lives, planned, logged };
@@ -149,13 +155,13 @@ function Grid({ clients, clientId }: { clients: Client[]; clientId?: string }) {
     const it = d.it!;
     if (!d.moved) return setForm(it.k === "ev" ? { kind: "ev", draft: it.ev } : it.k === "wk" ? { kind: "wk", draft: it.x } : null);
     if (it.k === "ev") {
-      const patch = { starts_at: isoAt(d.date, d.s), ends_at: isoAt(d.date, d.e) };
+      const patch = { starts_at: isoAt(d.date, d.s, tz), ends_at: isoAt(d.date, d.e, tz) };
       setEvents((r) => (r ?? []).map((x) => (x.id === it.id ? { ...x, ...patch } : x)));
       const { error } = await supabase().from("events").update(patch).eq("id", it.id);
       if (error) { reloadEvents(); return toast("Could not save. Check your connection."); }
-      toast(`Moved to ${fmtClock(d.s)}–${fmtClock(d.e)}${d.date !== localParts(it.ev.starts_at).date ? `, ${parseYmd(d.date).toLocaleDateString("en-US", { weekday: "short" })}` : ""}`);
+      toast(`Moved to ${fmtClock(d.s)}–${fmtClock(d.e)}${d.date !== localParts(it.ev.starts_at, tz).date ? `, ${parseYmd(d.date).toLocaleDateString("en-US", { weekday: "short" })}` : ""}`);
     } else if (it.k === "wk") {
-      const patch = { started_at: isoAt(d.date, d.s), minutes: d.e - d.s };
+      const patch = { started_at: isoAt(d.date, d.s, tz), minutes: d.e - d.s };
       setEntries((r) => (r ?? []).map((x) => (x.id === it.id ? { ...x, ...patch } : x)));
       const { error } = await supabase().from("time_entries").update(patch).eq("id", it.id);
       if (error) { reloadEntries(); return toast("Could not save. Check your connection."); }
@@ -169,9 +175,9 @@ function Grid({ clients, clientId }: { clients: Client[]; clientId?: string }) {
   const block = (it: Placed, s = it.s, e = it.e, dragging = false) => {
     const cls = dragging ? " dragging" : "";
     if (it.k === "plan") return (
-      <div key={it.id} className="cg-b plan" style={{ ...box(s, e, it.lane, it.lanes, 0, 58), ["--c" as string]: it.c.color }} title={`${clientLabel(it.c)} · usual hours`} role="link" tabIndex={0}
+      <div key={it.id} className="cg-b plan" style={{ ...box(s, e, it.lane, it.lanes, 0, 58), ["--c" as string]: it.c.color }} title={`${clientLabel(it.c)} · usual hours${it.their ? ` (${it.their} their time)` : ""}`} role="link" tabIndex={0}
         onClick={() => router.push(`/clients/${it.c.id}`)} onKeyDown={(ev) => { if (ev.key === "Enter") router.push(`/clients/${it.c.id}`); }}>
-        <b>{clientLabel(it.c)}</b><small>{fmtClock(s)}–{fmtClock(e)}</small>
+        <b>{clientLabel(it.c)}</b><small>{fmtClock(s)}–{fmtClock(e)}</small>{it.their && <small className="their">{it.their}</small>}
       </div>
     );
     if (it.k === "ev") return (
@@ -193,7 +199,7 @@ function Grid({ clients, clientId }: { clients: Client[]; clientId?: string }) {
   const rangeTitle = mode === "day"
     ? parseYmd(days[0]).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
     : `${parseYmd(days[0]).toLocaleDateString("en-US", { month: "long", day: "numeric" })} – ${parseYmd(days[6]).toLocaleDateString("en-US", days[0].slice(5, 7) === days[6].slice(5, 7) ? { day: "numeric" } : { month: "long", day: "numeric" })}`;
-  const shift = (n: number) => setAnchor(n === 0 ? today() : addDays(anchor, n * (mode === "day" ? 1 : 7)));
+  const shift = (n: number) => setAnchor(n === 0 ? todayIn(tz) : addDays(anchor, n * (mode === "day" ? 1 : 7)));
   const newBlock = () => setForm({ kind: "ev", draft: { date: days.includes(t) ? t : days[0], client_id: clientId ?? null } });
 
   return (
@@ -201,7 +207,7 @@ function Grid({ clients, clientId }: { clients: Client[]; clientId?: string }) {
       <div className="row cal-bar">
         <div className="grow" style={{ minWidth: 0 }}>
           <b className="cal-title">{rangeTitle}</b>
-          <span className="small muted">{hrs(totalLogged)}h logged of {hrs(totalPlanned)}h planned</span>
+          <span className="small muted">{hrs(totalLogged)}h logged of {hrs(totalPlanned)}h planned · times in {tz === deviceTz() ? "your time" : "their time"} ({tzShort(tz)})</span>
         </div>
         <Seg label="Calendar view" options={[["day", "Day"], ["week", "Week"]]} value={mode} onChange={setMode} />
         <div className="row" style={{ gap: 6 }}>
@@ -250,8 +256,8 @@ function Grid({ clients, clientId }: { clients: Client[]; clientId?: string }) {
         <span><i className="lg wk" />Hours you logged</span>
         <span>Drag on empty space to block time. Drag a block to move it, or pull its bottom edge to resize.</span>
       </div>
-      {form?.kind === "ev" && <EventForm ev={form.draft} clients={clients} onClose={() => setForm(null)} onSaved={reloadEvents} />}
-      {form?.kind === "wk" && <TimeForm entry={form.draft} clients={clients} onClose={() => setForm(null)} onSaved={reloadEntries} />}
+      {form?.kind === "ev" && <EventForm ev={form.draft} clients={clients} onClose={() => setForm(null)} onSaved={reloadEvents} tz={tz} />}
+      {form?.kind === "wk" && <TimeForm entry={form.draft} clients={clients} onClose={() => setForm(null)} onSaved={reloadEntries} tz={tz} />}
     </>
   );
 }

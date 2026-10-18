@@ -6,6 +6,7 @@ import Greeting from "@/components/greeting";
 import WeekStats from "@/components/week-stats";
 import TodoList from "@/components/todo-list";
 import Timers from "@/components/timers";
+import ClientAvatar from "@/components/client-avatar";
 
 export const metadata = { title: "Today" };
 
@@ -34,7 +35,7 @@ export default async function Today() {
             {active.map((c) => (
               <Link key={c.id} href={`/clients/${c.id}`} className="door spot" style={{ ["--c" as string]: c.color }}>
                 <span className="door-top">
-                  <span className="avatar" style={{ background: c.color, width: 40, height: 40, fontSize: 16, borderRadius: 14 }}>{clientLabel(c)[0].toUpperCase()}</span>
+                  <ClientAvatar c={c} size={40} />
                   <span className="door-go"><Icon name="right" size={16} /></span>
                 </span>
                 <span className="door-name">{clientLabel(c)}</span>
@@ -43,7 +44,7 @@ export default async function Today() {
             ))}
           </div>
         ) : (
-          <div className="card empty"><b>Add your first client</b><span>Each client gets a portal with projects, tasks, time, money and reports.</span><Link className="btn small" href="/clients/new"><Icon name="plus" />New client</Link></div>
+          <div className="card empty"><b>Add your first client</b><span>Each client gets a portal with projects, tasks, time, invoices and reports.</span><Link className="btn small" href="/clients/new"><Icon name="plus" />New client</Link></div>
         )}
       </div>
     </>

@@ -1,7 +1,9 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { useRows } from "@/lib/use-rows";
-import { parseYmd, today, weekStartYmd, weekday } from "@/lib/dates";
+import { parseYmd, today, weekStartYmd } from "@/lib/dates";
+import { planBlocks } from "@/lib/cal";
 import { hrs, money } from "@/lib/format";
 import type { Client } from "@/lib/types";
 
@@ -18,13 +20,16 @@ export function useWeekEntries(clientId?: string) {
 // Hours today and this week, and what that work is worth at each client's rate.
 export default function WeekStats({ clients, goal, currency = "USD", clientId }: { clients: Client[]; goal: number; currency?: string; clientId?: string }) {
   const [rows] = useWeekEntries(clientId);
+  // "Today" depends on your device's time zone, so planned hours are worked out only in the browser.
+  const ready = useSyncExternalStore(() => () => {}, () => true, () => false);
   const t0 = parseYmd(today()).getTime();
   const all = rows ?? [];
   const todayMin = all.filter((e) => new Date(e.started_at).getTime() >= t0).reduce((a, e) => a + e.minutes, 0);
   const weekMin = all.reduce((a, e) => a + e.minutes, 0);
   const earned = clients.filter((c) => c.rate_type === "Hourly" && c.rate).reduce((a, c) => a + (all.filter((e) => e.client_id === c.id).reduce((x, e) => x + e.minutes, 0) / 60) * (c.rate ?? 0), 0);
   const c = clientId ? clients.find((x) => x.id === clientId) : undefined;
-  const plannedToday = c ? (c.work_days.includes(weekday(today())) ? c.hours_per_day ?? 0 : 0) : clients.filter((x) => x.status === "Active" && x.work_days.includes(weekday(today()))).reduce((a, x) => a + (x.hours_per_day ?? 0), 0);
+  // Usual hours that fall on your today, after converting from each client's time zone.
+  const plannedToday = !ready ? 0 : Math.round(planBlocks(today(), c ? [c] : clients).reduce((a, p) => a + p.e - p.s, 0) / 6) / 10;
   const weekGoal = c ? c.weekly_hours ?? 0 : goal;
   const bar = (v: number, max: number) => max ? <div className="bar"><i style={{ width: `${Math.min(100, (v / 60 / max) * 100)}%`, background: c?.color }} /></div> : null;
   return (

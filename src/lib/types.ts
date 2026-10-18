@@ -13,6 +13,8 @@ export type Client = {
   report_cadence: "" | "Daily" | "Weekly";
   color: string;
   services: string;
+  timezone: string; // IANA name like America/New_York; empty means same as you
+  logo_url: string;
 };
 
 export type Profile = { user_id: string; name: string; currency: string; weekly_goal: number };

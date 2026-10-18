@@ -2,23 +2,25 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/use-rows";
-import { today } from "@/lib/dates";
 import { hm, isoAt, localParts, minToTime, snap15, toMin, type TimeEntry } from "@/lib/cal";
 import { toast } from "@/lib/toast";
+import { deviceTz, partsIn, todayIn, tzShort } from "@/lib/tz";
 import { clientLabel, type Client } from "@/lib/types";
 import Modal from "./modal";
 
 export type TimeDraft = Partial<TimeEntry>;
 
 // Log or fix hours. Start, end and length stay in step with each other.
-export default function TimeForm({ entry = {}, clients, onClose, onSaved }: { entry?: TimeDraft; clients: Client[]; onClose: () => void; onSaved?: () => void }) {
+// tz is the time zone the times are shown and typed in (yours unless a client portal says otherwise).
+export default function TimeForm({ entry = {}, clients, onClose, onSaved, tz: zone }: { entry?: TimeDraft; clients: Client[]; onClose: () => void; onSaved?: () => void; tz?: string }) {
+  const [tz] = useState(() => zone || deviceTz());
   const [init] = useState(() => {
     if (entry.started_at) {
-      const p = localParts(entry.started_at), m = entry.minutes ?? 60;
+      const p = localParts(entry.started_at, tz), m = entry.minutes ?? 60;
       return { date: p.date, start: minToTime(p.min), end: minToTime((p.min + m) % 1440), minutes: m };
     }
-    const d = new Date(), now = snap15(d.getHours() * 60 + d.getMinutes()), m = entry.minutes ?? 60;
-    return { date: today(), start: minToTime(Math.max(0, now - m)), end: minToTime(now), minutes: m };
+    const now = snap15(partsIn(Date.now(), tz).min), m = entry.minutes ?? 60;
+    return { date: todayIn(tz), start: minToTime(Math.max(0, now - m)), end: minToTime(now), minutes: m };
   });
   const [clientId, setClientId] = useState(entry.client_id ?? "");
   const [date, setDate] = useState(init.date);
@@ -42,7 +44,7 @@ export default function TimeForm({ entry = {}, clients, onClose, onSaved }: { en
     if (minutes <= 0) return toast("Enter how long you worked.");
     if (!start) return toast("Add a start time.");
     setBusy(true);
-    const row = { client_id: clientId || null, started_at: isoAt(date, toMin(start)), minutes, note: note.trim() };
+    const row = { client_id: clientId || null, started_at: isoAt(date, toMin(start), tz), minutes, note: note.trim() };
     const { error } = entry.id
       ? await supabase().from("time_entries").update(row).eq("id", entry.id)
       : await supabase().from("time_entries").insert({ ...row, source: "manual" });
@@ -80,7 +82,7 @@ export default function TimeForm({ entry = {}, clients, onClose, onSaved }: { en
           <div className="field"><label htmlFor="tf-end">End</label><input id="tf-end" type="time" step={300} value={end} onChange={(e) => onEnd(e.target.value)} /></div>
           <div className="field"><label htmlFor="tf-h">Hours</label><input id="tf-h" type="number" inputMode="numeric" min={0} max={24} value={hours} onChange={(e) => onLength(e.target.value, mins)} /></div>
           <div className="field"><label htmlFor="tf-m">Minutes</label><input id="tf-m" type="number" inputMode="numeric" min={0} max={59} value={mins} onChange={(e) => onLength(hours, e.target.value)} /></div>
-          <p className="small muted full" style={{ margin: 0 }}>Change the start or end and the hours update. Change the hours and the end time follows.</p>
+          <p className="small muted full" style={{ margin: 0 }}>Change the start or end and the hours update. Change the hours and the end time follows.{tz !== deviceTz() ? ` Times are in ${tzShort(tz)}.` : ""}</p>
           <div className="field full"><label htmlFor="tf-note">What you did</label><input id="tf-note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Shows in your EOD report" /></div>
         </div>
         <div className="modal-foot">

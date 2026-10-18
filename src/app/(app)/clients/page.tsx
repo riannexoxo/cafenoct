@@ -3,6 +3,7 @@ import { clientLabel } from "@/lib/types";
 import { getClients } from "@/lib/data";
 import { rateText } from "@/lib/format";
 import Icon from "@/components/icon";
+import ClientAvatar from "@/components/client-avatar";
 
 export const metadata = { title: "Clients" };
 
@@ -21,7 +22,7 @@ export default async function Clients() {
           {clients.map((c) => (
             <Link key={c.id} href={`/clients/${c.id}`} className="card spot lift" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div className="row" style={{ flexWrap: "nowrap" }}>
-                <span className="avatar" style={{ background: c.color, width: 40, height: 40, fontSize: 16, borderRadius: 14 }}>{clientLabel(c)[0].toUpperCase()}</span>
+                <ClientAvatar c={c} size={40} />
                 <div className="grow" style={{ minWidth: 0 }}><div className="ellipsis" style={{ fontWeight: 500 }}>{clientLabel(c)}</div><div className="small muted ellipsis">{c.company ? c.name : c.services || "—"}</div></div>
                 <span className={`pill ${c.status === "Active" ? "good" : c.status === "Lead" ? "acc" : ""}`}>{c.status}</span>
               </div>

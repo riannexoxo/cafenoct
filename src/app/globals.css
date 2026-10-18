@@ -597,3 +597,14 @@ textarea.eod:focus { outline: none; border-color: var(--accent); }
 @keyframes growbar { from { transform: scaleY(0); } }
 @media (max-width: 640px) { .cal-bar > .grow { flex-basis: 100%; } }
 @media (prefers-reduced-motion: reduce) { .toast, .week-chart .bv, .cg-b.ghost { animation: none; } }
+
+/* Client logos, clocks and time zones */
+img.has-logo { object-fit: cover; background: #FBF7F1; box-shadow: inset 0 0 0 1px var(--line); }
+.clocks { display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 10px; }
+.clock { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 16px; background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--c); min-width: 0; }
+.clock-t { display: flex; flex-direction: column; min-width: 0; }
+.clock-t b { font-size: 18px; font-weight: 400; line-height: 1.15; }
+.clock-t small { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cg-b small.their { opacity: .65; }
+@media (max-width: 640px) { .clocks { grid-template-columns: repeat(2, minmax(0, 1fr)); } .clock { padding: 8px 10px; } .clock-t b { font-size: 16px; } }
+.clock-t b i { font: normal 11px var(--font); color: var(--accent-ink); letter-spacing: .04em; }
