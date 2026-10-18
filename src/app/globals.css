@@ -247,13 +247,13 @@ td.r, th.r { text-align: right; }
   .rail { display: none; }
   main { padding-block: 24px 120px; }
   .tabbar { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 800; background: var(--glass); backdrop-filter: blur(16px); border-top: 1px solid var(--line); padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
-  .tabbar button { border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10.5px; color: var(--muted); padding: 6px 0; border-radius: 12px; }
-  .tabbar button.on { color: var(--ink); }
+  .tabbar :is(button, a) { border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10.5px; color: var(--muted); padding: 6px 0; border-radius: 12px; }
+  .tabbar :is(button, a).on { color: var(--ink); }
   .tabbar svg { width: 21px; height: 21px; }
   .search { width: 100%; }
 }
 .sheet-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.sheet-grid button { border: 1px solid var(--line); background: var(--paper); border-radius: 16px; padding: 16px 8px; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 12px; }
+.sheet-grid :is(button, a) { border: 1px solid var(--line); background: var(--paper); border-radius: 16px; padding: 16px 8px; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 12px; }
 .sheet-grid svg { width: 22px; height: 22px; color: var(--accent-ink); }
 
 .chart text { fill: var(--muted); font: 400 10.5px var(--mono); }
@@ -264,8 +264,8 @@ td.r, th.r { text-align: right; }
 
 /* ===== Motions adapted from the BrewedOps Motion Library ===== */
 /* Press and settle */
-.btn, .tabbar button, .nav :is(button, a), .sheet-grid button, .check, .sw { transition: transform 587ms var(--settle), background .2s var(--ease), color .25s var(--ease), box-shadow .2s var(--ease); }
-.btn:active, .tabbar button:active, .nav :is(button, a):active, .sheet-grid button:active { transform: scale(.94); transition: transform 90ms ease-out; }
+.btn, .tabbar :is(button, a), .nav :is(button, a), .sheet-grid :is(button, a), .check, .sw { transition: transform 587ms var(--settle), background .2s var(--ease), color .25s var(--ease), box-shadow .2s var(--ease); }
+.btn:active, .tabbar :is(button, a):active, .nav :is(button, a):active, .sheet-grid :is(button, a):active { transform: scale(.94); transition: transform 90ms ease-out; }
 /* Gliding active pill (sidebar) */
 .nav { position: relative; }
 .nav :is(button, a).on { background: none; }
@@ -277,8 +277,8 @@ td.r, th.r { text-align: right; }
 /* Springing dot (bottom tab bar) */
 @media (max-width: 899px) {
   .tabbar { position: fixed; }
-  .tabbar button svg { transition: transform 594ms var(--pop); }
-  .tabbar button.on svg { transform: translateY(-3px); }
+  .tabbar :is(button, a) svg { transition: transform 594ms var(--pop); }
+  .tabbar :is(button, a).on svg { transform: translateY(-3px); }
   .tdot { position: absolute; left: max(8px, env(safe-area-inset-left, 0px)); bottom: calc(4px + env(safe-area-inset-bottom, 0px)); width: calc((100% - 2 * max(8px, env(safe-area-inset-left, 0px))) / 5); height: 6px; display: flex; justify-content: center; pointer-events: none; transition: transform 594ms var(--pop); }
   .tdot i { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
   .tdot.go i { animation: sq 560ms var(--ml-ease); }
@@ -564,3 +564,9 @@ textarea.eod:focus { outline: none; border-color: var(--accent); }
 .auth-msg { min-height: 18px; margin: 0; color: var(--rose-ink); }
 .soon { padding: 48px 24px; text-align: center; color: var(--muted); display: flex; flex-direction: column; gap: 8px; align-items: center; }
 @media (max-width: 899px) { .shell { grid-template-columns: minmax(0, 1fr); } }
+
+/* Phone menu sheet */
+.sheet-h { font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 4px 0 -6px; }
+.sheet-grid .nav-dot { width: 28px; height: 28px; font-size: 13px; border-radius: 9px; }
+.sheet-grid :is(button, a) span:last-child { text-align: center; line-height: 1.25; }
+@media (max-width: 899px) { main { padding-block: 20px 110px; } }
