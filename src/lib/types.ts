@@ -15,6 +15,8 @@ export type Client = {
   services: string;
   timezone: string; // IANA name like America/New_York; empty means same as you
   logo_url: string;
+  hours_tz: string; // time zone the usual hours are set in; empty means the client's time zone
+  day_starts: Record<string, string>; // start time for particular days, e.g. {"3": "08:00"} for Wednesdays
 };
 
 export type Profile = { user_id: string; name: string; currency: string; weekly_goal: number };

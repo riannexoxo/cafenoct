@@ -1,9 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { supabase } from "@/lib/use-rows";
-import { ZONES } from "@/lib/tz";
+import { ZONES, deviceTz, tzShort } from "@/lib/tz";
 import type { Client } from "@/lib/types";
 import ClientAvatar from "./client-avatar";
 
@@ -18,10 +18,18 @@ export default function ClientForm({ initial }: { initial?: Partial<Form> & { id
   const [f, setF] = useState<Form>({
     name: "", company: "", email: "", contact: "", services: "", status: "Active", source: "", rate: null, rate_type: "Hourly",
     currency: "USD", work_days: [], hours_per_day: null, weekly_hours: null, start_time: null, report_cadence: "",
-    color: COLORS[0], links: "", notes: "", timezone: "", logo_url: "", ...initial,
+    color: COLORS[0], links: "", notes: "", timezone: "", logo_url: "", hours_tz: "", day_starts: {}, ...initial,
   } as Form);
   const [msg, setMsg] = useState("");
   const [uploading, setUploading] = useState(false);
+  const mine = useSyncExternalStore(() => () => {}, deviceTz, () => "");
+  const [perDay, setPerDay] = useState(() => Object.keys(initial?.day_starts ?? {}).length > 0);
+  const inMine = !!f.hours_tz || !f.timezone;
+  const setDayStart = (d: number, v: string) => setF((x) => {
+    const next = { ...x.day_starts };
+    if (v) next[d] = v; else delete next[d];
+    return { ...x, day_starts: next };
+  });
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((x) => ({ ...x, [k]: v }));
   const num = (v: string) => (v === "" ? null : Number(v));
   const toggleDay = (d: number) => {
@@ -72,7 +80,7 @@ export default function ClientForm({ initial }: { initial?: Partial<Form> & { id
       <div className="field"><label htmlFor="rate">Rate</label><input id="rate" type="number" step="0.01" min="0" disabled={f.rate_type === "Unpaid" || f.rate_type === "No fixed rate"} value={f.rate ?? ""} onChange={(e) => set("rate", num(e.target.value))} /></div>
       <div className="field"><label htmlFor="currency">Currency</label><select id="currency" value={f.currency} onChange={(e) => set("currency", e.target.value)}>{["USD", "PHP", "AUD", "CAD", "GBP", "EUR", "NZD", "SGD"].map((s) => <option key={s}>{s}</option>)}</select></div>
       <div className="field"><label htmlFor="report">Reports they expect</label><select id="report" value={f.report_cadence} onChange={(e) => set("report_cadence", e.target.value as Form["report_cadence"])}><option value="">None</option><option value="Daily">Daily EOD</option><option value="Weekly">Weekly report</option></select></div>
-      <div className="field full"><label>Work days (leave empty if flexible)</label>
+      <div className="field full"><label>Work days{f.timezone ? (inMine ? ", in my time" : ", in their time") : ""} (leave empty if flexible)</label>
         <div className="row" style={{ gap: 6 }}>{DAYS.map((d, i) => (
           <button key={d} type="button" className={`pill ${f.work_days.includes(i + 1) ? "acc" : ""}`} aria-pressed={f.work_days.includes(i + 1)} style={{ border: 0, padding: "5px 11px" }} onClick={() => toggleDay(i + 1)}>{d}</button>
         ))}</div>
@@ -84,7 +92,27 @@ export default function ClientForm({ initial }: { initial?: Partial<Form> & { id
         {!ZONES.some(([z]) => z === f.timezone) && f.timezone && <option value={f.timezone}>{f.timezone}</option>}
         {ZONES.map(([z, l]) => <option key={z} value={z}>{l}</option>)}
       </select></div>
-      <div className="field"><label htmlFor="start">Usual start time{f.timezone ? " (their time)" : ""}</label><input id="start" type="time" value={f.start_time?.slice(0, 5) ?? ""} onChange={(e) => set("start_time", e.target.value || null)} /></div>
+      {f.timezone && (
+        <div className="field"><label htmlFor="hours_tz">Their usual hours are in</label><select id="hours_tz" value={f.hours_tz} onChange={(e) => set("hours_tz", e.target.value)}>
+          <option value="">Their time{mine ? ` (${tzShort(f.timezone)})` : ""}</option>
+          {mine && <option value={mine}>My time ({tzShort(mine)})</option>}
+          {f.hours_tz && f.hours_tz !== mine && <option value={f.hours_tz}>{f.hours_tz}</option>}
+        </select></div>
+      )}
+      <div className="field"><label htmlFor="start">Usual start time{f.timezone ? (inMine ? " (my time)" : " (their time)") : ""}</label><input id="start" type="time" value={f.start_time?.slice(0, 5) ?? ""} onChange={(e) => set("start_time", e.target.value || null)} /></div>
+      {f.work_days.length > 0 && (
+        <div className="field full">
+          <label className="row" style={{ gap: 8, cursor: "pointer" }}><input type="checkbox" checked={perDay} onChange={(e) => { setPerDay(e.target.checked); if (!e.target.checked) set("day_starts", {}); }} style={{ width: "auto" }} />Some days start at a different time</label>
+          {perDay && (
+            <div className="row" style={{ gap: 8, marginTop: 4 }}>{f.work_days.map((d) => (
+              <span key={d} className="row" style={{ gap: 6, flexWrap: "nowrap" }}>
+                <span className="small muted" style={{ width: 30 }}>{DAYS[d - 1]}</span>
+                <input type="time" aria-label={`${DAYS[d - 1]} start time`} value={f.day_starts[d] ?? ""} placeholder={f.start_time?.slice(0, 5) ?? ""} onChange={(e) => setDayStart(d, e.target.value)} style={{ width: 130 }} />
+              </span>
+            ))}<span className="small muted full">Leave a day empty to use the usual start time.</span></div>
+          )}
+        </div>
+      )}
       <div className="field full"><label>Logo</label>
         <div className="row" style={{ gap: 12 }}>
           <ClientAvatar c={{ ...f, name: f.name || "?" }} size={44} />

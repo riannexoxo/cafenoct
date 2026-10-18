@@ -33,9 +33,10 @@ export function planBlocks(d: string, clients: Client[], tz = deviceTz()) {
   for (const cd of [addDays(d, -1), d, addDays(d, 1)]) {
     for (const c of list) {
       if (!c.work_days.includes(weekday(cd))) continue;
-      const ctz = c.timezone || tz, key = `${ctz}|${cd}`, len = (c.hours_per_day ?? 0) * 60;
-      const s = c.start_time ? toMin(c.start_time) : cursors.get(key) ?? 8 * 60;
-      if (!c.start_time) cursors.set(key, s + len);
+      const ctz = c.hours_tz || c.timezone || tz, key = `${ctz}|${cd}`, len = (c.hours_per_day ?? 0) * 60;
+      const fixed = c.day_starts?.[weekday(cd)] || c.start_time;
+      const s = fixed ? toMin(fixed) : cursors.get(key) ?? 8 * 60;
+      if (!fixed) cursors.set(key, s + len);
       const a = zonedMs(cd, s, ctz), b = a + len * 60000;
       if (b <= dayStart || a >= dayEnd) continue;
       out.push({ c, tz: ctz, theirS: s, theirE: s + len, s: Math.round((Math.max(a, dayStart) - dayStart) / 60000), e: Math.round((Math.min(b, dayEnd) - dayStart) / 60000) });
