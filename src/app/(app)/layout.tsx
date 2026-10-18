@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import Sidebar from "@/components/sidebar";
 import MobileNav from "@/components/mobile-nav";
 import MoneyPop from "@/components/money-pop";
+import FocusRunner from "@/components/focus-runner";
 import { getClients, getProfile } from "@/lib/data";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -23,6 +24,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </main>
       <MobileNav clients={clients ?? []} />
       <MoneyPop clients={clients ?? []} />
+      <FocusRunner />
     </div>
   );
 }

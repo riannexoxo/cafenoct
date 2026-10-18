@@ -29,9 +29,9 @@ function Clocks({ list }: { list: Client[] }) {
   return (
     <div className="clocks" aria-label="Your clients' local times">
       {list.map((c) => (
-        <div className="clock" key={c.id} style={{ ["--c" as string]: c.color }}>
+        <div className="cclock" key={c.id} style={{ ["--c" as string]: c.color }}>
           <ClientAvatar c={c} size={28} />
-          <span className="clock-t">
+          <span className="cclock-t">
             <b><span className="num">{timeIn(c.timezone, now)}</span> <i>{c.timezone === mine ? "same as you" : tzShort(c.timezone, now)}</i></b>
             <small>{c.name.split(" ")[0]} · {dayIn(c.timezone, now)}</small>
           </span>
