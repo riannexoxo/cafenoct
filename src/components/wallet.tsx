@@ -15,7 +15,10 @@ import Modal from "./modal";
 import Icon from "./icon";
 
 type Move = { id: string; kind: "convert" | "withdraw"; moved_on: string; from_currency: string; from_amount: number; to_currency: string | null; to_amount: number | null; method: string; note: string };
-type Fx = { rate: number; source: string; time: number; history: { date: string; rate: number }[]; quotes: { name: string; rate: number; fee: number; receive: number }[] };
+type Quote = { name: string; rate: number; fee: number; receive: number };
+type Fx = { rate: number; source: string; time: number; history: { date: string; rate: number }[]; quotes: Quote[] };
+type WiseComparison = { providers?: { alias: string; name: string; quotes?: { rate: number; fee: number; receivedAmount: number }[] }[] };
+const MIN_QUOTE = 50; // Wise's comparison has no PayPal or Wise prices below about $50
 type Unbilled = { client_id: string | null; minutes: number };
 const noop = () => () => {};
 const FLAGS: Record<string, string> = { USD: "🇺🇸", PHP: "🇵🇭", AUD: "🇦🇺", CAD: "🇨🇦", GBP: "🇬🇧", EUR: "🇪🇺", NZD: "🇳🇿", SGD: "🇸🇬" };
@@ -66,15 +69,37 @@ function WalletInner({ clients, base, rates, from }: { clients: Client[]; base: 
   const waiting = waitingList.reduce((a, i) => a + toBase(total(i), i.currency), 0);
   const unbilledWorth = (unbilled ?? []).reduce((a, e) => { const c = client(e.client_id); return a + (c?.rate_type === "Hourly" && c.rate ? toBase((e.minutes / 60) * c.rate, c.currency) : 0); }, 0);
 
-  // Live rate (and Wise vs PayPal) for the converter, refreshed every minute.
+  // Live rate for the cards, refreshed every minute.
   const amt = Number(amount) || Math.max(100, Math.round(bal.USD > 0 ? bal.USD : 1000));
   useEffect(() => {
     let alive = true;
-    const load = () => fetch(`/api/fx?from=USD&to=PHP&amount=${amt}`).then((r) => (r.ok ? r.json() : null)).then((j: Fx | null) => { if (alive && j?.rate) setFx(j); }).catch(() => {});
-    const first = setTimeout(load, 350);
+    const load = () => fetch("/api/fx?from=USD&to=PHP").then((r) => (r.ok ? r.json() : null)).then((j: Fx | null) => { if (alive && j?.rate) setFx(j); }).catch(() => {});
+    load();
     const i = setInterval(load, 60000);
-    return () => { alive = false; clearTimeout(first); clearInterval(i); };
+    return () => { alive = false; clearInterval(i); };
+  }, []);
+  // Wise vs PayPal for the amount you type. Asked straight from your browser: Wise blocks requests from the server.
+  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [quotedFor, setQuotedFor] = useState(0);
+  useEffect(() => {
+    if (amt < MIN_QUOTE) return;
+    let alive = true;
+    const t = setTimeout(() => {
+      fetch(`https://api.wise.com/v4/comparisons/?sourceCurrency=USD&targetCurrency=PHP&sendAmount=${amt}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j: WiseComparison | null) => {
+          if (!alive) return;
+          setQuotes((j?.providers ?? []).filter((p) => p.alias === "wise" || p.alias === "paypal").flatMap((p) => {
+            const x = p.quotes?.[0];
+            return x ? [{ name: p.name, rate: x.rate, fee: x.fee, receive: x.receivedAmount }] : [];
+          }));
+          setQuotedFor(amt);
+        })
+        .catch(() => { if (alive) { setQuotes([]); setQuotedFor(amt); } });
+    }, 400);
+    return () => { alive = false; clearTimeout(t); };
   }, [amt]);
+  const quoting = amt >= MIN_QUOTE && quotedFor !== amt;
   useEffect(() => { const i = setInterval(() => setNow(Date.now()), 15000); return () => clearInterval(i); }, []);
   const php = fx?.rate ?? rates.PHP ?? 0;
   const ago = fx ? Math.max(0, Math.round((now - fx.time) / 1000)) : 0;
@@ -147,18 +172,18 @@ function WalletInner({ clients, base, rates, from }: { clients: Client[]; base: 
           <h3><span>Wise or PayPal?</span></h3>
           <div className="field" style={{ marginBottom: 10 }}>
             <label htmlFor="fx-amt">If you convert</label>
-            <div className="row" style={{ flexWrap: "nowrap", gap: 8 }}><input id="fx-amt" className="search" style={{ width: "100%" }} type="number" min="1" inputMode="decimal" placeholder={String(amt)} value={amount} onChange={(e) => setAmount(e.target.value)} /><span className="muted">USD</span></div>
+            <div className="row" style={{ flexWrap: "nowrap", gap: 8 }}><input id="fx-amt" className="search" style={{ width: "100%" }} type="number" min={MIN_QUOTE} inputMode="decimal" placeholder={String(amt)} value={amount} onChange={(e) => setAmount(e.target.value)} /><span className="muted">USD</span></div>
           </div>
-          {fx?.quotes?.length ? (
-            <div className="list">
-              {[...fx.quotes].sort((a, b) => b.receive - a.receive).map((q, i, all) => (
+          {amt < MIN_QUOTE ? <p className="small muted">Wise and PayPal only show prices for ${MIN_QUOTE} and up. Try a bigger amount.</p> : quoting && !quotes.length ? <p className="small muted">Checking Wise and PayPal…</p> : quotes.length ? (
+            <div className="list" style={quoting ? { opacity: .5 } : undefined}>
+              {[...quotes].sort((a, b) => b.receive - a.receive).map((q, i, all) => (
                 <div className="li quote" key={q.name}>
                   <span className="t">{q.name}{i === 0 && all.length > 1 && <span className="pill good" style={{ marginLeft: 6 }}>Best</span>}<small>Rate {q.rate.toFixed(2)} · fee {money(q.fee, "USD")}</small></span>
                   <span className="num" style={{ textAlign: "right" }}>{money(q.receive, "PHP")}{i === 0 && all.length > 1 && <small className="good-t">+{money(q.receive - all[all.length - 1].receive, "PHP")} more</small>}</span>
                 </div>
               ))}
             </div>
-          ) : <p className="small muted">{fx ? "Wise and PayPal prices aren't available right now." : "Checking Wise and PayPal…"}</p>}
+          ) : <p className="small muted">Wise and PayPal prices aren&apos;t available right now. Try again in a minute.</p>}
           <p className="small muted" style={{ margin: "10px 0 0" }}>What you&apos;d get in pesos after each one&apos;s fees, from Wise&apos;s public price comparison. PayPal shows its send-money price; withdrawals can differ slightly.</p>
         </div>
       </div>
@@ -195,7 +220,7 @@ function WalletInner({ clients, base, rates, from }: { clients: Client[]; base: 
       </div>
 
       {form && <InvoiceForm inv={form.inv} mode={form.mode} clients={clients} existing={inv} from={from} onClose={() => setForm(null)} onSaved={reloadInv} />}
-      {move && <MoveForm move={move} fx={fx} balances={bal} onClose={() => setMove(null)} onSaved={reloadMoves} />}
+      {move && <MoveForm move={move} fx={fx ? { ...fx, quotes } : null} balances={bal} onClose={() => setMove(null)} onSaved={reloadMoves} />}
     </>
   );
 }
