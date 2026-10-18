@@ -23,6 +23,7 @@ const ALL: [string, string, IconName][] = [
   ["/docs", "Docs", "docs"],
   ["/content", "Content calendar", "content"],
   ["/toolkit", "Toolkit", "spark"],
+  ["/analytics", "Analytics", "time"],
   ["/automations", "Automations", "auto"],
   ["/settings", "Settings", "settings"],
 ];

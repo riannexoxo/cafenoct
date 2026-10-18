@@ -42,3 +42,22 @@ export const fullCaption = (p: Pick<Post, "caption" | "hashtags" | "hook">) => {
   const hook = p.hook.trim(), cap = p.caption.trim();
   return [hook && !cap.startsWith(hook) ? hook : "", cap, p.hashtags.trim()].filter(Boolean).join("\n\n");
 };
+
+// Results you type in after a post goes live, per platform.
+export const METRICS: { key: string; label: string }[] = [
+  { key: "views", label: "Views" }, { key: "reach", label: "Reach" }, { key: "likes", label: "Likes" },
+  { key: "comments", label: "Comments" }, { key: "shares", label: "Shares" }, { key: "saves", label: "Saves" },
+];
+export type Stats = Record<string, number>;
+export const engagements = (s: Stats = {}) => (s.likes || 0) + (s.comments || 0) + (s.shares || 0) + (s.saves || 0);
+// Engagement rate: engagements divided by reach (or views when reach isn't known).
+export const rate = (s: Stats = {}) => { const base = s.reach || s.views || 0; return base ? engagements(s) / base : 0; };
+export const hasStats = (p: Pick<Post, "stats">) => Object.values(p.stats ?? {}).some((s) => Object.values(s ?? {}).some((v) => Number(v) > 0));
+// One post's numbers added up across its platforms (or for one platform).
+export function totals(p: Pick<Post, "stats">, only?: string): Stats {
+  const out: Stats = {};
+  Object.entries(p.stats ?? {}).forEach(([pl, s]) => { if (only && pl !== only) return; Object.entries(s ?? {}).forEach(([k, v]) => { out[k] = (out[k] || 0) + (Number(v) || 0); }); });
+  return out;
+}
+export const compact = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(n >= 1e7 ? 0 : 1)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(n >= 1e4 ? 0 : 1)}K` : String(Math.round(n)));
+export const pct = (r: number) => `${(r * 100).toFixed(r >= 0.1 ? 0 : 1)}%`;

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/use-rows";
 import { today } from "@/lib/dates";
-import { FORMATS, PLATFORMS, STATUSES, formatTone, fullCaption, hashtags, limits, platform, statusTone, type Post, type Status } from "@/lib/posts";
+import { FORMATS, METRICS, PLATFORMS, STATUSES, engagements, formatTone, pct, rate, fullCaption, hashtags, limits, platform, statusTone, type Post, type Status } from "@/lib/posts";
 import { toast } from "@/lib/toast";
 import { clientLabel, type Client } from "@/lib/types";
 import Modal from "./modal";
@@ -27,6 +27,8 @@ export default function PostForm({ post = {}, clients, pillars, onClose, onSaved
   const [tags, setTags] = useState(post.hashtags ?? "");
   const [asset, setAsset] = useState(post.asset_url ?? "");
   const [urls, setUrls] = useState<Record<string, string>>(post.post_urls ?? {});
+  const [stats, setStats] = useState<Record<string, Record<string, number>>>(post.stats ?? {});
+  const setStat = (pl: string, k: string, v: string) => setStats((st) => ({ ...st, [pl]: { ...(st[pl] ?? {}), [k]: v === "" ? 0 : Math.max(0, Number(v) || 0) } }));
   const [notes, setNotes] = useState(post.notes ?? "");
   const [media, setMedia] = useState<string[]>(post.media ?? []);
   const [uploading, setUploading] = useState(0);
@@ -68,6 +70,7 @@ export default function PostForm({ post = {}, clients, pillars, onClose, onSaved
     const row = {
       client_id: clientId || null, title: title.trim(), platforms, platform: platforms[0], format, publish_on: date || null, publish_at: time || null, status,
       pillar: pillar.trim(), hook: hook.trim(), caption, hashtags: tags.trim(), asset_url: asset.trim(), post_urls: cleanUrls, notes: notes.trim(), media,
+      stats: Object.fromEntries(Object.entries(stats).filter(([k]) => platforms.includes(k))),
     };
     const { error } = post.id ? await supabase().from("posts").update(row).eq("id", post.id) : await supabase().from("posts").insert(row);
     setBusy(false);
@@ -160,6 +163,20 @@ export default function PostForm({ post = {}, clients, pillars, onClose, onSaved
                   <input aria-label={`${p} link`} value={urls[p] ?? ""} onChange={(e) => setUrls((u) => ({ ...u, [p]: e.target.value }))} placeholder={`Link to the ${p} post`} style={{ border: "1px solid var(--line-strong)", background: "var(--paper)", borderRadius: 12, padding: "9px 12px", width: "100%" }} />
                 </div>
               ))}</div>
+            </div>
+          )}
+          {status === "Posted" && (
+            <div className="field full"><label>Results <span className="muted">(type the numbers from each app; update them any time)</span></label>
+              <div className="stat-grid" style={{ gridTemplateColumns: `90px repeat(${METRICS.length}, minmax(64px, 1fr)) 64px` }}>
+                <span />{METRICS.map((m) => <span key={m.key} className="small muted">{m.label}</span>)}<span className="small muted">Rate</span>
+                {platforms.map((pl) => (
+                  <div key={pl} style={{ display: "contents" }}>
+                    <span className="plat on" style={{ ["--p" as string]: platform(pl)?.color }}><i>{platform(pl)?.short}</i>{pl}</span>
+                    {METRICS.map((m) => <input key={m.key} type="number" min={0} inputMode="numeric" aria-label={`${pl} ${m.label}`} value={stats[pl]?.[m.key] || ""} onChange={(e) => setStat(pl, m.key, e.target.value)} />)}
+                    <span className="num small" title={`${engagements(stats[pl])} engagements`}>{rate(stats[pl]) ? pct(rate(stats[pl])) : "—"}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
           <div className="field full"><label htmlFor="pf-notes">Notes</label><textarea id="pf-notes" value={notes} onChange={(e) => setNotes(e.target.value)} style={{ minHeight: 60 }} placeholder="Music, client feedback, ideas for the next one…" /></div>
