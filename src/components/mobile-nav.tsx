@@ -21,7 +21,8 @@ const ALL: [string, string, IconName][] = [
   ["/wallet", "Wallet", "money"],
   ["/projects", "Projects", "projects"],
   ["/docs", "Docs", "docs"],
-  ["/content", "Content", "content"],
+  ["/content", "Content calendar", "content"],
+  ["/toolkit", "Toolkit", "spark"],
   ["/automations", "Automations", "auto"],
   ["/settings", "Settings", "settings"],
 ];

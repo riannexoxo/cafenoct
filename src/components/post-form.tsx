@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { supabase } from "@/lib/use-rows";
 import { today } from "@/lib/dates";
-import { FORMATS, PLATFORMS, STATUSES, fullCaption, hashtags, limits, platform, statusTone, type Post, type Status } from "@/lib/posts";
+import { FORMATS, PLATFORMS, STATUSES, formatTone, fullCaption, hashtags, limits, platform, statusTone, type Post, type Status } from "@/lib/posts";
 import { toast } from "@/lib/toast";
 import { clientLabel, type Client } from "@/lib/types";
 import Modal from "./modal";
 import Icon from "./icon";
+import MediaThumb from "./media-thumb";
 
 export type PostDraft = Partial<Post>;
 
@@ -27,6 +28,29 @@ export default function PostForm({ post = {}, clients, pillars, onClose, onSaved
   const [asset, setAsset] = useState(post.asset_url ?? "");
   const [urls, setUrls] = useState<Record<string, string>>(post.post_urls ?? {});
   const [notes, setNotes] = useState(post.notes ?? "");
+  const [media, setMedia] = useState<string[]>(post.media ?? []);
+  const [uploading, setUploading] = useState(0);
+
+  // Images and videos go to your folder in the "post-media" storage bucket. The first one is the cover.
+  async function upload(files: FileList | null) {
+    const list = [...(files ?? [])].filter((f) => /^(image|video)\//.test(f.type));
+    if (!list.length) return;
+    if (list.some((f) => f.size > 25 * 1024 * 1024)) return toast("Each file needs to be under 25 MB.");
+    const { data: auth } = await supabase().auth.getSession();
+    const uid = auth.session?.user.id;
+    setUploading(list.length);
+    const urls: string[] = [];
+    for (const f of list.slice(0, 10)) {
+      const ext = (f.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const path = `${uid}/${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase().storage.from("post-media").upload(path, f, { contentType: f.type });
+      if (!error) urls.push(supabase().storage.from("post-media").getPublicUrl(path).data.publicUrl);
+      setUploading((n) => n - 1);
+    }
+    if (urls.length < list.length) toast("Some files didn't upload. Try them again.");
+    setMedia((m) => [...m, ...urls].slice(0, 10));
+    if (urls.length > 1 && format !== "Carousel") setFormat("Carousel");
+  }
   const [busy, setBusy] = useState(false);
   const [sure, setSure] = useState(false);
 
@@ -43,7 +67,7 @@ export default function PostForm({ post = {}, clients, pillars, onClose, onSaved
     const cleanUrls = Object.fromEntries(Object.entries(urls).filter(([k, v]) => platforms.includes(k) && v.trim()).map(([k, v]) => [k, /^https?:\/\//i.test(v.trim()) ? v.trim() : `https://${v.trim()}`]));
     const row = {
       client_id: clientId || null, title: title.trim(), platforms, platform: platforms[0], format, publish_on: date || null, publish_at: time || null, status,
-      pillar: pillar.trim(), hook: hook.trim(), caption, hashtags: tags.trim(), asset_url: asset.trim(), post_urls: cleanUrls, notes: notes.trim(),
+      pillar: pillar.trim(), hook: hook.trim(), caption, hashtags: tags.trim(), asset_url: asset.trim(), post_urls: cleanUrls, notes: notes.trim(), media,
     };
     const { error } = post.id ? await supabase().from("posts").update(row).eq("id", post.id) : await supabase().from("posts").insert(row);
     setBusy(false);
@@ -89,7 +113,28 @@ export default function PostForm({ post = {}, clients, pillars, onClose, onSaved
             </select>
           </div>
           <div className="field"><label htmlFor="pf-title">Post name</label><input id="pf-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Frizz-free tips reel" /></div>
-          <div className="field"><label htmlFor="pf-format">Format</label><select id="pf-format" value={format} onChange={(e) => setFormat(e.target.value)}>{FORMATS.map((f) => <option key={f}>{f}</option>)}</select></div>
+          <div className="field full"><label>Format</label>
+            <div className="row" style={{ gap: 6 }}>{FORMATS.map((f) => (
+              <button key={f} type="button" className={`fmt${format === f ? " on" : ""}`} style={{ ["--f" as string]: formatTone(f) }} aria-pressed={format === f} onClick={() => setFormat(f)}><i />{f}</button>
+            ))}</div>
+          </div>
+          <div className="field full"><label>{format === "Carousel" ? `Slides (${media.length}/10)` : "Thumbnail or video"}</label>
+            <div className="media-row">
+              {media.map((m, i) => (
+                <div key={m} className="media-th">
+                  <MediaThumb src={m} />
+                  {i === 0 ? <span className="media-cover">Cover</span> : <button type="button" className="media-cover btn-ish" onClick={() => setMedia((xs) => [m, ...xs.filter((x) => x !== m)])}>Make cover</button>}
+                  <button type="button" className="media-x" aria-label="Remove" onClick={() => setMedia((xs) => xs.filter((x) => x !== m))}><Icon name="x" size={12} /></button>
+                </div>
+              ))}
+              {media.length < 10 && (
+                <label className="media-add">
+                  <input type="file" accept="image/*,video/mp4,video/quicktime,video/webm" multiple hidden onChange={(e) => { upload(e.target.files); e.target.value = ""; }} />
+                  <Icon name="plus" /><span>{uploading ? `Uploading ${uploading}…` : media.length ? "Add more" : "Upload"}</span>
+                </label>
+              )}
+            </div>
+          </div>
           <div className="field"><label htmlFor="pf-status">Status</label><select id="pf-status" value={status} onChange={(e) => setStatus(e.target.value as Status)}>{STATUSES.map((s) => <option key={s.name}>{s.name}</option>)}</select></div>
           <div className="field"><label htmlFor="pf-date">Post on</label><input id="pf-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
           <div className="field"><label htmlFor="pf-time">Time (optional)</label><input id="pf-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} /></div>
@@ -124,7 +169,7 @@ export default function PostForm({ post = {}, clients, pillars, onClose, onSaved
           <button type="button" className="btn" onClick={copy}><Icon name="copy" />Copy caption</button>
           {asset && <a className="btn" href={/^https?:\/\//i.test(asset) ? asset : `https://${asset}`} target="_blank" rel="noopener noreferrer"><Icon name="link" />Open design</a>}
           <button type="button" className="btn" onClick={onClose}>Cancel</button>
-          <button type="submit" className="btn solid" disabled={busy}>{busy ? "Saving…" : "Save"}</button>
+          <button type="submit" className="btn solid" disabled={busy || uploading > 0}>{busy ? "Saving…" : "Save"}</button>
         </div>
       </form>
     </Modal>

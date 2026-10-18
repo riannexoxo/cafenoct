@@ -2,10 +2,10 @@
 export type Post = {
   id: string; client_id: string | null; title: string; publish_on: string | null; publish_at: string | null;
   status: Status; format: string; caption: string; hashtags: string; hook: string; pillar: string;
-  platforms: string[]; post_urls: Record<string, string>; stats: Record<string, Record<string, number>>; asset_url: string; notes: string;
+  platforms: string[]; post_urls: Record<string, string>; stats: Record<string, Record<string, number>>; asset_url: string; notes: string; media: string[];
 };
 export type Status = "Idea" | "Drafting" | "For approval" | "Scheduled" | "Posted";
-export const POST_COLS = "id,client_id,title,publish_on,publish_at,status,format,caption,hashtags,hook,pillar,platforms,post_urls,stats,asset_url,notes";
+export const POST_COLS = "id,client_id,title,publish_on,publish_at,status,format,caption,hashtags,hook,pillar,platforms,post_urls,stats,asset_url,notes,media";
 
 export const PLATFORMS: { name: string; short: string; color: string; caption: number; tags: number; tagHint: string }[] = [
   { name: "Instagram", short: "IG", color: "#D6457A", caption: 2200, tags: 30, tagHint: "Up to 30. 3–5 focused ones usually work best." },
@@ -17,7 +17,11 @@ export const PLATFORMS: { name: string; short: string; color: string; caption: n
   { name: "Pinterest", short: "PI", color: "#C8232C", caption: 500, tags: 20, tagHint: "Keywords matter more than hashtags." },
 ];
 export const platform = (n: string) => PLATFORMS.find((p) => p.name === n);
-export const FORMATS = ["Reel", "Carousel", "Single image", "Story", "Video", "Text", "Live"];
+// Each format has its own color, so the mix of reels, carousels and so on shows at a glance.
+export const FORMAT_TONES: Record<string, string> = { Reel: "#C46A7A", Carousel: "#8E7CA0", "Single image": "#C39A78", Story: "#D9956B", Video: "#5E8F8A", Text: "#7F8FA6", Live: "#C8553D" };
+export const FORMATS = Object.keys(FORMAT_TONES);
+export const formatTone = (f: string) => FORMAT_TONES[f] ?? "var(--accent)";
+export const isVideo = (url: string) => /\.(mp4|mov|webm)(\?|$)/i.test(url);
 export const STATUSES: { name: Status; tone: string }[] = [
   { name: "Idea", tone: "var(--muted)" }, { name: "Drafting", tone: "var(--warn)" }, { name: "For approval", tone: "var(--lilac)" },
   { name: "Scheduled", tone: "var(--accent)" }, { name: "Posted", tone: "var(--good)" },

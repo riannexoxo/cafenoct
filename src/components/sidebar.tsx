@@ -21,7 +21,8 @@ const WORKSPACE: [string, string, IconName][] = [
   ["/projects", "Projects", "projects"],
   ["/work", "Work", "tasks"],
   ["/docs", "Docs", "docs"],
-  ["/content", "Content", "content"],
+  ["/content", "Content calendar", "content"],
+  ["/toolkit", "Toolkit", "spark"],
 ];
 export default function Sidebar({ clients, name }: { clients: Client[]; name: string }) {
   const path = usePathname();

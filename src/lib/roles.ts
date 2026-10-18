@@ -19,6 +19,8 @@ export const hasRole = (c: Pick<Client, "roles">, ...r: Role[]) => r.some((x) =>
 export function portalTabs(c: Pick<Client, "roles" | "personal">): [string, string, IconName][] {
   const tabs: [string, string, IconName][] = [["", "Overview", "today"]];
   if (hasRole(c, "smm", "design", "video")) tabs.push(["/content", "Content calendar", "content"]);
+  if (hasRole(c, "smm")) tabs.push(["/toolkit", "Toolkit", "spark"]);
+  if (hasRole(c, "code") || c.personal) tabs.push(["/ideas", "Idea bank", "auto"]);
   tabs.push(["/calendar", "Calendar", "schedule"], ["/work", "Work", "tasks"], ["/projects", "Projects", "projects"], ["/docs", "Docs", "docs"]);
   if (!c.personal) tabs.push(["/reports", "EOD reports", "chat"], ["/invoices", "Invoices", "money"]);
   return tabs;
