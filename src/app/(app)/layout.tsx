@@ -2,21 +2,21 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Sidebar from "@/components/sidebar";
 import MobileNav from "@/components/mobile-nav";
-import type { Client, Profile } from "@/lib/types";
+import { getClients, getProfile } from "@/lib/data";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) redirect("/login");
-  // Accounts made before CafeNoct's tables existed get their empty profile here on first visit.
-  await supabase.from("profiles").upsert({ user_id: auth.user.id, invoice_email: auth.user.email ?? "" }, { onConflict: "user_id", ignoreDuplicates: true });
-  const [{ data: profile }, { data: clients }] = await Promise.all([
-    supabase.from("profiles").select("user_id,name,currency,weekly_goal").maybeSingle<Profile>(),
-    supabase.from("clients").select("*").neq("status", "Past").order("company").returns<Client[]>(),
-  ]);
+  // getClaims checks your sign-in locally from the token, without an extra trip to Supabase.
+  const { data: auth } = await supabase.auth.getClaims();
+  const claims = auth?.claims;
+  if (!claims) redirect("/login");
+  const [profile, all] = await Promise.all([getProfile(), getClients()]);
+  const clients = all.filter((c) => c.status !== "Past");
+  // Accounts made before CafeNoct's tables existed get their empty profile on first visit only.
+  if (!profile) await supabase.from("profiles").insert({ user_id: claims.sub, invoice_email: (claims.email as string) ?? "" });
   return (
     <div className="shell">
-      <Sidebar clients={clients ?? []} name={profile?.name || auth.user.email?.split("@")[0] || ""} />
+      <Sidebar clients={clients ?? []} name={profile?.name || (claims.email as string | undefined)?.split("@")[0] || ""} />
       <main>
         <div className="wrap">{children}</div>
       </main>

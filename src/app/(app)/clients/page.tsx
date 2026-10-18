@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
-import { clientLabel, type Client } from "@/lib/types";
+import { clientLabel } from "@/lib/types";
+import { getClients } from "@/lib/data";
 import { rateText } from "@/lib/format";
 import Icon from "@/components/icon";
 
@@ -9,9 +9,7 @@ export const metadata = { title: "Clients" };
 const ORDER = ["Active", "Lead", "Paused", "Past"];
 
 export default async function Clients() {
-  const supabase = await createClient();
-  const { data } = await supabase.from("clients").select("*").returns<Client[]>();
-  const clients = (data ?? []).sort((a, b) => ORDER.indexOf(a.status) - ORDER.indexOf(b.status) || clientLabel(a).localeCompare(clientLabel(b)));
+  const clients = [...(await getClients())].sort((a, b) => ORDER.indexOf(a.status) - ORDER.indexOf(b.status) || clientLabel(a).localeCompare(clientLabel(b)));
   return (
     <>
       <div className="head">

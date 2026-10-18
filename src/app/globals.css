@@ -570,3 +570,10 @@ textarea.eod:focus { outline: none; border-color: var(--accent); }
 .sheet-grid .nav-dot { width: 28px; height: 28px; font-size: 13px; border-radius: 9px; }
 .sheet-grid :is(button, a) span:last-child { text-align: center; line-height: 1.25; }
 @media (max-width: 899px) { main { padding-block: 20px 110px; } }
+
+/* Page change: new content fades up softly instead of popping in */
+.wrap > * { animation: rise .45s cubic-bezier(.32,.72,0,1) both; }
+.wrap > *:nth-child(2) { animation-delay: .04s; } .wrap > *:nth-child(3) { animation-delay: .08s; } .wrap > *:nth-child(4) { animation-delay: .12s; }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+.page-loading { display: flex; flex-direction: column; gap: 28px; }
+@media (prefers-reduced-motion: reduce) { .wrap > * { animation: none; } }

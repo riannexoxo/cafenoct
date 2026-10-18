@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
-import { clientLabel, type Client, type Profile } from "@/lib/types";
+import { clientLabel } from "@/lib/types";
+import { getClients, getProfile } from "@/lib/data";
 import Icon from "@/components/icon";
 import Greeting from "@/components/greeting";
 import WeekStats from "@/components/week-stats";
@@ -10,12 +10,8 @@ import Timers from "@/components/timers";
 export const metadata = { title: "Today" };
 
 export default async function Today() {
-  const supabase = await createClient();
-  const [{ data: profile }, { data: clients }] = await Promise.all([
-    supabase.from("profiles").select("user_id,name,currency,weekly_goal").maybeSingle<Profile>(),
-    supabase.from("clients").select("*").neq("status", "Past").order("company").returns<Client[]>(),
-  ]);
-  const list = clients ?? [];
+  const [profile, clients] = await Promise.all([getProfile(), getClients()]);
+  const list = clients.filter((c) => c.status !== "Past");
   const active = list.filter((c) => c.status === "Active");
   return (
     <>

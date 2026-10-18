@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { clientLabel, type Client } from "@/lib/types";
+import { clientLabel } from "@/lib/types";
+import { getClients } from "@/lib/data";
 import { rateText } from "@/lib/format";
 import Icon from "@/components/icon";
 import WeekStats from "@/components/week-stats";
@@ -12,9 +12,8 @@ const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export default async function ClientPortal({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createClient();
-  const { data: clients } = await supabase.from("clients").select("*").returns<Client[]>();
-  const c = (clients ?? []).find((x) => x.id === id);
+  const clients = await getClients();
+  const c = clients.find((x) => x.id === id);
   if (!c) notFound();
   const schedule = c.work_days.length ? `${c.work_days.length === 5 && c.work_days.join() === "1,2,3,4,5" ? "Mon–Fri" : c.work_days.map((d) => DAYS[d - 1]).join(", ")}${c.hours_per_day ? `, ${c.hours_per_day}h a day` : ""}` : c.weekly_hours ? `${c.weekly_hours}h a week, flexible days` : "";
   return (
