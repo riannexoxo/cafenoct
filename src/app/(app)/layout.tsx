@@ -7,6 +7,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/login");
+  // Accounts made before CafeNoct's tables existed get their empty profile here on first visit.
+  await supabase.from("profiles").upsert({ user_id: auth.user.id, invoice_email: auth.user.email ?? "" }, { onConflict: "user_id", ignoreDuplicates: true });
   const [{ data: profile }, { data: clients }] = await Promise.all([
     supabase.from("profiles").select("user_id,name,currency,weekly_goal").maybeSingle<Profile>(),
     supabase.from("clients").select("*").neq("status", "Past").order("company").returns<Client[]>(),
