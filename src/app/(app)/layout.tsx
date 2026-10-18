@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Sidebar from "@/components/sidebar";
 import MobileNav from "@/components/mobile-nav";
+import MoneyPop from "@/components/money-pop";
 import { getClients, getProfile } from "@/lib/data";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -21,6 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="wrap">{children}</div>
       </main>
       <MobileNav clients={clients ?? []} />
+      <MoneyPop />
     </div>
   );
 }

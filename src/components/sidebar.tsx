@@ -14,7 +14,7 @@ const ME: [string, string, IconName][] = [
   ["/calendar", "My calendar", "schedule"],
   ["/time", "Time", "time"],
   ["/focus", "Focus", "focus"],
-  ["/invoices", "Invoices", "money"],
+  ["/wallet", "Wallet", "money"],
 ];
 const WORKSPACE: [string, string, IconName][] = [
   ["/projects", "Projects", "projects"],

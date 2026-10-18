@@ -19,6 +19,6 @@ export type Client = {
   day_starts: Record<string, string>; // start time for particular days, e.g. {"3": "08:00"} for Wednesdays
 };
 
-export type Profile = { user_id: string; name: string; currency: string; weekly_goal: number };
+export type Profile = { user_id: string; name: string; currency: string; weekly_goal: number; business: string; invoice_email: string };
 
 export const clientLabel = (c: Pick<Client, "name" | "company">) => c.company || c.name;

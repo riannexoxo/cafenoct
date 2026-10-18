@@ -17,7 +17,7 @@ const TABS: [string, string, IconName][] = [
 const ALL: [string, string, IconName][] = [
   ["/time", "Time", "time"],
   ["/focus", "Focus", "focus"],
-  ["/invoices", "Invoices", "money"],
+  ["/wallet", "Wallet", "money"],
   ["/projects", "Projects", "projects"],
   ["/docs", "Docs", "docs"],
   ["/content", "Content", "content"],

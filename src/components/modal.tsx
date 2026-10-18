@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 // A centered dialog on computers, a sheet that slides up on phones. Escape or a tap outside closes it.
-export default function Modal({ label, onClose, children }: { label: string; onClose: () => void; children: React.ReactNode }) {
+export default function Modal({ label, onClose, children, wide }: { label: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
   const [shown, setShown] = useState(false);
   const close = useRef(onClose);
   const box = useRef<HTMLDivElement>(null);
@@ -19,7 +19,7 @@ export default function Modal({ label, onClose, children }: { label: string; onC
   }, []);
   return createPortal(
     <div className="scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) close.current(); }}>
-      <div ref={box} className={`modal${shown ? " in" : ""}`} role="dialog" aria-modal="true" aria-label={label}>{children}</div>
+      <div ref={box} className={`modal${wide ? " wide" : ""}${shown ? " in" : ""}`} role="dialog" aria-modal="true" aria-label={label}>{children}</div>
     </div>,
     document.body,
   );
