@@ -142,7 +142,7 @@ function Inner({ clients, clientId }: { clients: Client[]; clientId?: string }) 
           <h3><span>Add numbers</span><span className="muted">{missing.length} posted without results</span></h3>
           <p className="small muted" style={{ margin: "0 0 10px" }}>Open each app&apos;s insights and type the numbers here. They save as you go.</p>
           <div className="table-wrap">
-            <table className="sheet">
+            <table className="sheet an-sheet">
               <thead><tr><th>Post</th><th>Platform</th>{METRICS.map((m) => <th key={m.key} className="r">{m.label}</th>)}</tr></thead>
               <tbody>{sheet.slice(0, 40).flatMap((p) => (p.platforms?.length ? p.platforms : ["Instagram"]).filter((pl) => !only || pl === only).map((pl) => (
                 <tr key={`${p.id}-${pl}`}>

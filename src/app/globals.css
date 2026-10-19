@@ -903,3 +903,4 @@ input.task-title:focus { outline: none; }
 .tp-thumb i { font-style: normal; font-weight: 500; color: var(--c); }
 .linkish { all: unset; cursor: pointer; color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
 @media (max-width: 640px) { .top-post { grid-template-columns: 44px minmax(0, 1fr) 72px; } .top-post .tp-rank, .top-post .pc-plats { display: none; } }
+table.an-sheet input { border-color: var(--line-strong); background: var(--paper); font-family: var(--mono); }
