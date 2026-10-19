@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import CalendarConnect from "@/components/calendar-connect";
 import PaymentEmails from "@/components/payment-emails";
+import Link from "next/link";
 import Icon from "@/components/icon";
 
 export const metadata = { title: "Settings" };
@@ -20,7 +21,7 @@ export default async function Settings() {
       </div>
       <PaymentEmails connected={!!data?.inbox_key_hash} />
       <CalendarConnect connected={!!data?.gcal_url} />
-      <div className="card small muted row" style={{ gap: 8 }}><Icon name="spark" size={16} />Focus lengths, invoice details, automations and themes move here next.</div>
+      <div className="card small muted row" style={{ gap: 8 }}><Icon name="spark" size={16} />Reminders live in <Link className="linkish" href="/automations">Automations</Link>. Invoice details and themes move here next.</div>
     </>
   );
 }

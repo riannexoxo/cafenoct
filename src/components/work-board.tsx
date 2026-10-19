@@ -3,7 +3,7 @@
 import { useState, useSyncExternalStore } from "react";
 import { useRows } from "@/lib/use-rows";
 import { addDays, rel, today } from "@/lib/dates";
-import { COLUMNS, PROJECT_COLS, TASK_COLS, colOf, setStatus, type Project, type Task } from "@/lib/work";
+import { COLUMNS, PROJECT_COLS, TASK_COLS, colOf, nextUp, setStatus, wantsNextUp, type Project, type Task } from "@/lib/work";
 import { supabase } from "@/lib/use-rows";
 import { toast } from "@/lib/toast";
 import { clientLabel, type Client } from "@/lib/types";
@@ -53,8 +53,9 @@ function Board({ clients, clientId, projectId }: { clients: Client[]; clientId?:
     setTasks((r) => (r ?? []).map((x) => (x.id === id ? { ...x, status, done_at: status === "done" ? new Date().toISOString() : null } : x)));
     const r = await setStatus(task, status, client(task.client_id));
     if (r.error) { reload(); return toast("Could not move it. Try again."); }
-    if (r.next) toast(`Done. The next one is set for ${rel(r.next).toLowerCase()}.`);
-    else if (status === "done") toast("Nice. Marked done.");
+    const after = status === "done" && (await wantsNextUp()) ? nextUp(tasks ?? [], id) : undefined;
+    if (r.next) toast(`Done. The next one is set for ${rel(r.next).toLowerCase()}.${after ? ` Next up: ${after.title}` : ""}`);
+    else if (status === "done") toast(after ? `Nice. Next up: ${after.title}` : "Nice. Marked done.");
   }
   async function add(e: React.FormEvent) {
     e.preventDefault();

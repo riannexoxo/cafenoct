@@ -4,6 +4,7 @@ import { useState } from "react";
 import { supabase, useRows } from "@/lib/use-rows";
 import { addDays, rel, today } from "@/lib/dates";
 import { nextDue } from "@/lib/cal";
+import { nextUp, wantsNextUp } from "@/lib/work";
 import { toast } from "@/lib/toast";
 import { clientLabel, type Client } from "@/lib/types";
 import Icon from "./icon";
@@ -67,7 +68,11 @@ export default function TodoList({ clients, clientId }: { clients: Client[]; cli
     const patch = { status: doneNow ? "done" : "todo", done_at: doneNow ? new Date().toISOString() : null };
     setRows((r) => (r ?? []).map((y) => (y.id === x.id ? { ...y, ...patch } : y)));
     await supabase().from("tasks").update(patch).eq("id", x.id);
-    if (x.repeat === "none" || !x.repeat) return;
+    if (x.repeat === "none" || !x.repeat) {
+      const n = doneNow && (await wantsNextUp()) ? nextUp(rows ?? [], x.id) : undefined;
+      if (n) toast(`Nice. Next up: ${n.title}`);
+      return;
+    }
     // Repeating tasks come back on the client's next work day (or next week / month).
     const base = x.due_date && x.due_date > t ? x.due_date : t;
     const next = nextDue(x.repeat, base, byId(x.client_id));

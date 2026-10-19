@@ -115,3 +115,22 @@ export async function createFromTemplate(key: string, clientId: string | null, s
   const res = await supabase().from("tasks").insert(rows);
   return { error: res.error?.message ?? null, id: data.id };
 }
+
+// The task to do next: what you're already doing, then overdue or due today, then by priority and date.
+const PRI: Record<string, number> = { high: 0, med: 1, low: 2 };
+export function nextUp<T extends Pick<Task, "id" | "status" | "due_date" | "priority">>(tasks: T[], skip?: string, on = today()) {
+  const urgent = (x: T) => (x.status === "doing" ? 0 : x.due_date && x.due_date <= on ? 1 : 2);
+  return tasks
+    .filter((x) => x.id !== skip && x.status !== "done" && x.status !== "waiting")
+    .sort((a, b) => urgent(a) - urgent(b) || (PRI[a.priority] ?? 1) - (PRI[b.priority] ?? 1) || (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"))[0];
+}
+
+// Whether "What's next" is on in Automations (on unless you turned it off). Read once per visit.
+let nextUpOn: Promise<boolean> | null = null;
+export function wantsNextUp() {
+  nextUpOn ??= (async () => {
+    const { data } = await supabase().from("profiles").select("settings").maybeSingle<{ settings: { automations?: { nextUp?: { on?: boolean } } } | null }>();
+    return data?.settings?.automations?.nextUp?.on !== false;
+  })().catch(() => true);
+  return nextUpOn;
+}

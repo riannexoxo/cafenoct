@@ -2,8 +2,9 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseKey, supabaseUrl } from "@/lib/supabase/env";
 
-// /api/inbox is called by your Gmail script, which signs in with its own private key instead of a session.
-const PUBLIC = ["/login", "/auth", "/api/inbox"];
+// /api/inbox is called by your Gmail script and /api/automations/run by the 5-minute schedule;
+// both bring their own private key instead of a session.
+const PUBLIC = ["/login", "/auth", "/api/inbox", "/api/automations/run"];
 
 // Keeps the sign-in session fresh on every request and sends signed-out visitors to the login page.
 export async function proxy(request: NextRequest) {
@@ -35,5 +36,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|brand/|apple-touch-icon|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|woff2)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|brand/|apple-touch-icon|manifest.webmanifest|sw.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|woff2)$).*)"],
 };

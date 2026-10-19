@@ -4,6 +4,7 @@ import Sidebar from "@/components/sidebar";
 import MobileNav from "@/components/mobile-nav";
 import MoneyPop from "@/components/money-pop";
 import FocusRunner from "@/components/focus-runner";
+import DesktopBridge from "@/components/desktop-bridge";
 import { getClients, getProfile } from "@/lib/data";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -25,6 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <MobileNav clients={clients ?? []} />
       <MoneyPop clients={clients ?? []} />
       <FocusRunner />
+      <DesktopBridge />
     </div>
   );
 }
