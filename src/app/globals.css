@@ -908,7 +908,7 @@ table.an-sheet input { border-color: var(--line-strong); background: var(--paper
 /* automations */
 .auto-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; align-items: start; }
 @media (max-width: 1000px) { .auto-grid { grid-template-columns: minmax(0, 1fr); } }
-.auto-grid .col { display: flex; flex-direction: column; min-width: 0; }
+.auto-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .auto b { font-weight: 500; }
 .auto-more { margin-top: 10px; font-size: 12.5px; color: var(--muted); }
 .auto-pick { border: 1px solid var(--line-strong); background: var(--paper); color: var(--ink); border-radius: 10px; padding: 5px 8px; font: inherit; font-size: 12.5px; }

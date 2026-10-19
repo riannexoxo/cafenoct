@@ -44,7 +44,7 @@ export default function Automations({ clients, saved, google, vapid }: { clients
 
   return (
     <div className="auto-grid">
-      <div className="col" style={{ gap: 16 }}>
+      <div className="auto-col">
         {ready ? <Device vapid={vapid} onFirst={() => { if (!started) save(s); }} /> : <div className="card skel" style={{ height: 150 }} />}
 
         <div className="card">
@@ -116,7 +116,7 @@ export default function Automations({ clients, saved, google, vapid }: { clients
         </div>
       </div>
 
-      <div className="col" style={{ gap: 16 }}>
+      <div className="auto-col">
         {ready && started && <Today key={JSON.stringify(s)} />}
         <BackTap />
       </div>
