@@ -929,3 +929,15 @@ table.an-sheet input { border-color: var(--line-strong); background: var(--paper
 .soc-av img { width: 100%; height: 100%; object-fit: cover; }
 .soc .t { min-width: 140px; }
 .soc-imp { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); }
+
+/* invoices */
+.bill-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.bill { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); min-width: 0; }
+.inv-bar { gap: 8px; flex-wrap: wrap; align-items: center; margin: 16px 0; }
+.inv-search { min-width: 0; width: 200px; }
+@media (max-width: 700px) { .inv-search { width: 100%; } }
+.inv-table td .btn.small + .btn.small { margin-left: 4px; }
+.inv-phone { display: none; }
+.inv-phone .li { width: 100%; border: 0; background: none; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.inv-phone-r { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex: none; }
+@media (max-width: 700px) { .inv-wide { display: none; } .inv-phone { display: flex; } .hide-sm { display: none; } }

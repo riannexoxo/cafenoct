@@ -5,7 +5,7 @@ import { useRows } from "@/lib/use-rows";
 import { parseYmd, today } from "@/lib/dates";
 import { hm, localParts } from "@/lib/cal";
 import { money } from "@/lib/format";
-import { INVOICE_COLS, isOverdue, received, total, type Invoice } from "@/lib/invoices";
+import { INVOICE_COLS, hoursDraft, isOverdue, received, total, type Invoice } from "@/lib/invoices";
 import type { Client } from "@/lib/types";
 import InvoiceForm, { type InvoiceDraft } from "./invoice-form";
 import Icon from "./icon";
@@ -41,11 +41,7 @@ export default function ClientInvoices({ client, clients, from }: { client: Clie
   const paidYear = list.filter((i) => i.status === "paid" && (i.paid_date ?? i.issue_date).startsWith(year)).reduce((a, i) => a + received(i), 0);
   const paidAll = list.filter((i) => i.status === "paid").reduce((a, i) => a + received(i), 0);
 
-  function billHours() {
-    const dates = hours.map((e) => localParts(e.started_at).date).sort();
-    const range = dates.length ? (dates[0] === dates[dates.length - 1] ? short(dates[0]) : `${short(dates[0])} – ${short(dates[dates.length - 1])}`) : "";
-    setForm({ mode: "invoice", inv: { client_id: client.id, currency: cur, entryIds: hours.map((e) => e.id), items: [{ desc: `${client.services || "Virtual assistant services"}${range ? `, ${range}` : ""}`, qty: Math.round((unbilledMin / 60) * 100) / 100, rate: client.rate ?? 0 }] } });
-  }
+  const billHours = () => setForm({ mode: "invoice", inv: hoursDraft(client, hours.map((e) => ({ id: e.id, minutes: e.minutes, date: localParts(e.started_at).date }))) });
 
   return (
     <>

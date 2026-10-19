@@ -29,6 +29,18 @@ export function convert(amount: number, from: string, to: string, base: string, 
   return to === base ? toBase : rates[to] ? toBase * rates[to] : toBase;
 }
 
+const shortDate = (d: string) => parseYmd(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+// A ready-made invoice for a client's unbilled hours at their rate, with the date range in the line.
+export function hoursDraft(c: Client, entries: { id: string; minutes: number; date: string }[]) {
+  const dates = entries.map((e) => e.date).sort(), minutes = entries.reduce((a, e) => a + e.minutes, 0);
+  const range = dates.length ? (dates[0] === dates[dates.length - 1] ? shortDate(dates[0]) : `${shortDate(dates[0])} – ${shortDate(dates[dates.length - 1])}`) : "";
+  return {
+    client_id: c.id, currency: c.currency || "USD", entryIds: entries.map((e) => e.id),
+    items: [{ desc: `${c.services || "Virtual assistant services"}${range ? `, ${range}` : ""}`, qty: Math.round((minutes / 60) * 100) / 100, rate: c.rate ?? 0 }],
+  };
+}
+
 const fmtDate = (d: string | null) => (d ? parseYmd(d).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "");
 
 // A plain-text invoice for pasting into an email or chat.

@@ -19,6 +19,7 @@ const ALL: [string, string, IconName][] = [
   ["/time", "Time", "time"],
   ["/focus", "Focus", "focus"],
   ["/wallet", "Wallet", "money"],
+  ["/invoices", "Invoices", "file"],
   ["/projects", "Projects", "projects"],
   ["/docs", "Docs", "docs"],
   ["/content", "Content calendar", "content"],
