@@ -973,3 +973,33 @@ table.an-sheet input { border-color: var(--line-strong); background: var(--paper
 .swatch .num { flex: 1; text-transform: uppercase; }
 .kit-row { gap: 6px; flex-wrap: nowrap; margin-bottom: 8px; }
 @media (prefers-reduced-motion: reduce) { .swatch-chip { transition: none; } }
+
+/* work files + Canva */
+.drop-zone { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px; border: 1.5px dashed var(--line-strong); border-radius: 14px; transition: background .2s, border-color .2s; }
+.drop-zone.over { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.file-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
+.file-tile { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); min-width: 0; }
+.file-prev { all: unset; cursor: zoom-in; display: grid; place-items: center; aspect-ratio: 1; border-radius: 10px; overflow: hidden;
+  background: repeating-conic-gradient(var(--tint-strong) 0 25%, transparent 0 50%) 50% / 16px 16px; }
+.file-prev img, .file-prev video { width: 100%; height: 100%; object-fit: contain; display: block; }
+.file-ext { font: 500 13px var(--mono); color: var(--muted); }
+.file-meta { display: flex; flex-direction: column; min-width: 0; font-size: 12.5px; }
+.file-meta small { font-size: 11px; }
+.canva-box { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; margin-bottom: 10px; background: linear-gradient(135deg, color-mix(in srgb, var(--lavender) 45%, var(--card)), var(--card)); }
+.canva-thumb { width: 64px; height: 64px; border-radius: 10px; object-fit: cover; flex: none; background: var(--tint-strong); }
+.canva-ph { display: grid; place-items: center; font: 600 22px var(--font); color: #fff; background: linear-gradient(135deg, #00C4CC, #7D2AE8); }
+.canva-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; max-height: 60vh; overflow: auto; }
+.canva-item { all: unset; cursor: pointer; display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; min-width: 0; }
+.canva-item img, .canva-item .canva-ph { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; background: var(--tint-strong); transition: transform .2s var(--ease); }
+.canva-item:hover img { transform: translateY(-2px); }
+.lightbox { position: fixed; inset: 0; z-index: 1200; background: rgba(15, 10, 8, .88); display: flex; flex-direction: column; }
+.lightbox-bar { display: flex; align-items: center; gap: 8px; padding: 10px max(16px, env(safe-area-inset-left, 0px)); color: #F1E6DA; font-size: 13px; }
+.lightbox-bar .ellipsis { flex: 1; min-width: 0; }
+.lightbox-body { flex: 1; min-height: 0; overflow: auto; display: flex; padding: 8px 16px 24px; }
+.lightbox-body > * { margin: auto; }
+.lightbox-body img, .lightbox-body video { max-width: 100%; max-height: calc(100dvh - 90px); object-fit: contain; }
+.lightbox-body img { cursor: zoom-in; }
+.lightbox-body img.zoom { max-width: none; max-height: none; cursor: zoom-out; }
+.lightbox-body iframe { width: min(900px, 100%); height: 100%; border: 0; background: #fff; border-radius: 8px; }
+.dlv-cover { width: calc(100% + 24px); margin: -10px -12px 2px; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 11px 11px 0 0; display: block; background: var(--tint-strong); }
+@media (prefers-reduced-motion: reduce) { .canva-item img, .drop-zone { transition: none; } }

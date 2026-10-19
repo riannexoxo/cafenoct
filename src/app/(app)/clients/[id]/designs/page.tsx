@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getClients } from "@/lib/data";
 import PortalHead from "@/components/portal-head";
 import Deliverables from "@/components/deliverables";
+import { canvaReady } from "@/lib/canva";
 
 export const metadata = { title: "Design queue" };
 
@@ -13,7 +14,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   return (
     <>
       <PortalHead c={c} section="Design queue" blurb="Their design requests from brief to delivered. Drag a card to move it along." />
-      <Deliverables kind="design" clients={clients} clientId={c.id} />
+      <Deliverables kind="design" clients={clients} clientId={c.id} canva={canvaReady()} />
     </>
   );
 }

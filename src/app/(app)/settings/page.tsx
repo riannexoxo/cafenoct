@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import CalendarConnect from "@/components/calendar-connect";
 import PaymentEmails from "@/components/payment-emails";
 import ProfileForm from "@/components/profile-form";
+import CanvaSettings from "@/components/canva-settings";
+import { canvaReady } from "@/lib/canva";
 import Link from "next/link";
 import Icon from "@/components/icon";
 
@@ -23,6 +25,7 @@ export default async function Settings() {
       <ProfileForm initial={{ name: data?.name ?? "", business: data?.business ?? "", currency: data?.currency || "USD", invoice_email: data?.invoice_email ?? "", tz: data?.settings?.tz ?? "" }} />
       <PaymentEmails connected={!!data?.inbox_key_hash} />
       <CalendarConnect connected={!!data?.gcal_url} />
+      <CanvaSettings ready={canvaReady()} />
       <div className="card small muted row" style={{ gap: 8 }}><Icon name="spark" size={16} />Reminders live in <Link className="linkish" href="/automations">Automations</Link>. Themes come next.</div>
     </>
   );

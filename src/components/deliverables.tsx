@@ -1,26 +1,29 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+/* eslint-disable @next/next/no-img-element -- previews are the original files; next/image would recompress them. */
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { supabase, useRows } from "@/lib/use-rows";
 import { addDays, rel, today } from "@/lib/dates";
 import { toast } from "@/lib/toast";
 import { DELIVERABLE_COLS, DESIGN_SPECS, QUEUE, VIDEO_SPECS, stageOf, type Deliverable, type Kind } from "@/lib/deliverables";
 import { clientLabel, type Client } from "@/lib/types";
+import { BUCKET, coverOf, useSigned } from "@/lib/work-files";
 import Modal from "./modal";
 import Icon from "./icon";
+import WorkFiles from "./work-files";
 
 const noop = () => () => {};
 const href = (u?: string) => { if (!u?.trim()) return ""; try { const x = new URL(/^https?:\/\//i.test(u) ? u.trim() : `https://${u.trim()}`); return x.href; } catch { return ""; } };
 type Draft = Partial<Deliverable>;
 
 // A design or video queue: each request moves from brief to delivered, with revision rounds counted.
-export default function Deliverables(props: { kind: Kind; clients: Client[]; clientId?: string }) {
+export default function Deliverables(props: { kind: Kind; clients: Client[]; clientId?: string; canva?: boolean }) {
   const ready = useSyncExternalStore(noop, () => true, () => false);
   if (!ready) return <div className="card skel" style={{ height: 380 }} aria-busy="true" />;
   return <Queue {...props} />;
 }
 
-function Queue({ kind, clients, clientId }: { kind: Kind; clients: Client[]; clientId?: string }) {
+function Queue({ kind, clients, clientId, canva = false }: { kind: Kind; clients: Client[]; clientId?: string; canva?: boolean }) {
   const cfg = QUEUE[kind];
   const since = addDays(today(), -30);
   const [rows, reload, setRows] = useRows<Deliverable>(`dlv:${kind}:${clientId ?? "all"}`, (s) => {
@@ -37,6 +40,15 @@ function Queue({ kind, clients, clientId }: { kind: Kind; clients: Client[]; cli
   const list = (rows ?? []).filter((x) => !who || x.client_id === who);
   const active = cfg.stages.filter((s) => s.key !== "delivered");
   const delivered = list.filter((x) => x.status === "delivered");
+  const covers = useSigned(list.map((x) => coverOf(x.files, x.canva?.thumb)));
+
+  // Messages from the Canva sign-in coming back.
+  useEffect(() => {
+    const q = new URLSearchParams(location.search).get("canva");
+    if (!q) return;
+    toast({ connected: "Canva is connected. Open a request to link a design.", declined: "Canva wasn't connected.", expired: "That Canva sign-in expired. Try again.", failed: "Canva didn't connect. Try again.", notready: "Canva isn't set up yet.", reconnect: "Connect Canva again to open designs." }[q] ?? "");
+    history.replaceState(null, "", location.pathname);
+  }, []);
 
   async function move(id: string, status: string) {
     const d = (rows ?? []).find((x) => x.id === id);
@@ -52,10 +64,11 @@ function Queue({ kind, clients, clientId }: { kind: Kind; clients: Client[]; cli
   }
 
   const card = (x: Deliverable) => {
-    const c = client(x.client_id), over = x.revisions > x.max_revisions;
+    const c = client(x.client_id), over = x.revisions > x.max_revisions, cover = covers[coverOf(x.files, x.canva?.thumb)];
     return (
       <div key={x.id} className="wcardt" draggable onDragStart={(e) => e.dataTransfer.setData("text/dlv", x.id)} onClick={() => setForm(x)} role="button" tabIndex={0}
         onKeyDown={(e) => { if (e.key === "Enter") setForm(x); }} style={{ ["--c" as string]: c?.color ?? "var(--line-strong)" }}>
+        {cover && <img src={cover} alt="" className="dlv-cover" loading="lazy" draggable={false} />}
         <b>{x.title}</b>
         <div className="wt-meta">
           {!clientId && <span className="wt-client"><i />{c ? clientLabel(c) : "Personal"}</span>}
@@ -66,6 +79,7 @@ function Queue({ kind, clients, clientId }: { kind: Kind; clients: Client[]; cli
           {x.due_date && x.status !== "delivered" && <span className={`pill ${x.due_date < t ? "bad" : x.due_date === t ? "warn" : ""}`}>{rel(x.due_date)}</span>}
           {(x.revisions > 0 || x.status === "revisions") && <span className={`pill ${over ? "bad" : ""}`}>Rev {x.revisions}/{x.max_revisions}</span>}
           {href(x.links?.final) && <span className="small muted"><Icon name="check" size={12} /> Final</span>}
+          {(x.files ?? []).length > 0 && <span className="small muted"><Icon name="file" size={12} /> {x.files.length}</span>}
         </div>
       </div>
     );
@@ -109,7 +123,7 @@ function Queue({ kind, clients, clientId }: { kind: Kind; clients: Client[]; cli
         </div>
       )}
 
-      {form && <DeliverableForm d={form} kind={kind} clients={clients} onClose={() => setForm(null)} onSaved={reload} onMove={move} />}
+      {form && <DeliverableForm d={form} kind={kind} clients={clients} canva={canva} onClose={() => setForm(null)} onSaved={reload} onMove={move} />}
     </>
   );
 }
@@ -132,7 +146,7 @@ function Specs({ kind }: { kind: Kind }) {
   );
 }
 
-function DeliverableForm({ d, kind, clients, onClose, onSaved, onMove }: { d: Draft; kind: Kind; clients: Client[]; onClose: () => void; onSaved: () => void; onMove: (id: string, s: string) => void }) {
+function DeliverableForm({ d, kind, clients, canva, onClose, onSaved, onMove }: { d: Draft; kind: Kind; clients: Client[]; canva: boolean; onClose: () => void; onSaved: () => void; onMove: (id: string, s: string) => void }) {
   const cfg = QUEUE[kind];
   const [f, setF] = useState<Draft>({ ...d, links: { ...(d.links ?? {}) } });
   const [busy, setBusy] = useState(false);
@@ -159,6 +173,8 @@ function DeliverableForm({ d, kind, clients, onClose, onSaved, onMove }: { d: Dr
   async function remove() {
     if (!d.id) return;
     if (!sure) return setSure(true);
+    const paths = [...(f.files ?? []).map((x) => x.path), f.canva?.thumb ?? ""].filter(Boolean);
+    if (paths.length) await supabase().storage.from(BUCKET).remove(paths);
     await supabase().from("deliverables").delete().eq("id", d.id);
     onSaved();
     onClose();
@@ -193,6 +209,10 @@ function DeliverableForm({ d, kind, clients, onClose, onSaved, onMove }: { d: Dr
           {linkRow("ref", kind === "video" ? "Raw footage / references" : "References / brief files", "Drive, Dropbox or Pinterest link")}
           {linkRow("work", cfg.workLabel, kind === "video" ? "CapCut, Premiere or Drive link" : "Canva or Figma link")}
           {linkRow("final", "Final files", "Where you delivered it")}
+          {d.id ? (
+            <WorkFiles id={d.id} kind={kind} files={f.files ?? []} canva={f.canva ?? {}} canvaReady={canva}
+              onChange={(p) => { setF((x) => ({ ...x, ...p })); onSaved(); }} />
+          ) : <p className="small muted full" style={{ margin: 0 }}>Save it once, then add files{kind === "design" ? " or link a Canva design" : ""}.</p>}
           <div className="field"><label>Revision rounds</label>
             <div className="row" style={{ gap: 6 }}>
               <button type="button" className="btn small" onClick={() => set("revisions", Math.max(0, (Number(f.revisions) || 0) - 1))} aria-label="One less round">−</button>

@@ -1,12 +1,15 @@
 // Design and video requests (one queue each), data entry batches, and the specs cheat sheets.
+import type { WorkFile } from "@/lib/work-files";
 
 export type Kind = "design" | "video";
 export type Deliverable = {
   id: string; client_id: string | null; kind: Kind; title: string; type: string; size: string; length: string; status: string;
   brief: string; links: { ref?: string; work?: string; final?: string }; revisions: number; max_revisions: number;
   due_date: string | null; delivered_at: string | null; position: number; created_at: string;
+  files: WorkFile[]; canva: CanvaLink;
 };
-export const DELIVERABLE_COLS = "id,client_id,kind,title,type,size,length,status,brief,links,revisions,max_revisions,due_date,delivered_at,position,created_at";
+export type CanvaLink = { id?: string; title?: string; thumb?: string; w?: number; h?: number; pages?: number };
+export const DELIVERABLE_COLS = "id,client_id,kind,title,type,size,length,status,brief,links,revisions,max_revisions,due_date,delivered_at,position,created_at,files,canva";
 
 type Stage = { key: string; tone: string };
 export const STAGE_KEYS = ["brief", "making", "review", "revisions", "approved", "delivered"] as const;
