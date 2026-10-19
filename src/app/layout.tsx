@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
-import { THEME_COOKIE, parseTheme } from "@/lib/theme";
+import { THEME_COOKIE, lookOf, parseTheme } from "@/lib/theme";
 import "@fontsource/poppins/300.css";
 import "@fontsource/poppins/400.css";
 import "@fontsource/poppins/500.css";
@@ -25,15 +25,18 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F3ECE2" },
-    { media: "(prefers-color-scheme: dark)", color: "#17110D" },
-  ],
-};
+// The browser bar takes the theme's background color.
+export async function generateViewport(): Promise<Viewport> {
+  const t = parseTheme((await cookies()).get(THEME_COOKIE)?.value), look = lookOf(t.accent);
+  return {
+    width: "device-width",
+    initialScale: 1,
+    viewportFit: "cover",
+    themeColor: t.mode === "auto"
+      ? [{ media: "(prefers-color-scheme: light)", color: look.light.bg }, { media: "(prefers-color-scheme: dark)", color: look.dark.bg }]
+      : (t.mode === "dark" ? look.dark : look.light).bg,
+  };
+}
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   // Your saved theme, read on the server so the first paint already has the right colors.

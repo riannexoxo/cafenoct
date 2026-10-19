@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { supabase } from "@/lib/use-rows";
 import { ACCENTS, MODES, applyTheme, parseTheme, themeString, THEME_COOKIE, type Accent, type Mode, type Theme } from "@/lib/theme";
 import Seg from "./seg";
@@ -16,8 +16,12 @@ async function saveToProfile(t: Theme) {
 }
 
 // Light, dark or auto, and an accent color. Changes show right away and follow you to your other devices.
+const darkQuery = (cb: () => void) => { const m = matchMedia("(prefers-color-scheme: dark)"); m.addEventListener("change", cb); return () => m.removeEventListener("change", cb); };
+
 export default function ThemePicker({ saved }: { saved: string }) {
   const [t, setT] = useState<Theme>(() => parseTheme(saved));
+  const deviceDark = useSyncExternalStore(darkQuery, () => matchMedia("(prefers-color-scheme: dark)").matches, () => false);
+  const dark = t.mode === "dark" || (t.mode === "auto" && deviceDark);
   const pick = (next: Theme) => { setT(next); applyTheme(next); saveToProfile(next); };
   return (
     <div className="card">
@@ -26,19 +30,22 @@ export default function ThemePicker({ saved }: { saved: string }) {
         <span className="small muted">Mode</span>
         <Seg label="Light or dark" value={t.mode} onChange={(mode: Mode) => pick({ ...t, mode })} options={MODES} />
       </div>
-      <div className="theme-row">
-        <span className="small muted">Accent</span>
-        <div className="swatch-row" role="radiogroup" aria-label="Accent color">
-          {ACCENTS.map((a) => (
-            <button key={a.key} type="button" role="radio" aria-checked={t.accent === a.key} className={`accent-pick${t.accent === a.key ? " on" : ""}`}
+      <div className="theme-tiles" role="radiogroup" aria-label="Theme color">
+        {ACCENTS.map((a) => {
+          const l = dark ? a.dark : a.light;
+          return (
+            <button key={a.key} type="button" role="radio" aria-checked={t.accent === a.key} className={`theme-tile${t.accent === a.key ? " on" : ""}`}
               onClick={() => pick({ ...t, accent: a.key as Accent })}>
-              <span className="accent-dot" style={{ background: `linear-gradient(135deg, ${a.light} 50%, ${a.dark} 50%)` }} />
-              {a.label}
+              <span className="tt-prev" style={{ background: l.bg }} aria-hidden="true">
+                <span className="tt-side" style={{ background: l.card }}><i style={{ background: l.accent }} /><i style={{ background: l.ink, opacity: 0.25 }} /><i style={{ background: l.ink, opacity: 0.25 }} /></span>
+                <span className="tt-card" style={{ background: l.card }}><i style={{ background: l.ink }} /><i style={{ background: l.ink, opacity: 0.3 }} /><b style={{ background: l.accent }} /></span>
+              </span>
+              <span className="tt-name">{a.label}</span>
             </button>
-          ))}
-        </div>
+          );
+        })}
       </div>
-      <p className="small muted" style={{ margin: "10px 0 0" }}>Auto follows your phone or computer. Your choice follows you to every device you sign in on.</p>
+      <p className="small muted" style={{ margin: "10px 0 0" }}>Each theme recolors the whole app. Auto follows your phone or computer. Your choice follows you to every device you sign in on.</p>
     </div>
   );
 }
