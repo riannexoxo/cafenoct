@@ -952,3 +952,24 @@ table.an-sheet input { border-color: var(--line-strong); background: var(--paper
 .welcome-role { position: relative; }
 .welcome-role.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: color-mix(in srgb, var(--rose, var(--accent)) 22%, var(--paper)); }
 .welcome-role.on::after { content: "✓"; position: absolute; top: 8px; right: 10px; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); color: var(--paper); font-size: 11px; display: grid; place-items: center; }
+
+/* role tools: design / video queues, data entry batches, brand kit */
+.dlv-board { margin-top: 4px; }
+.batch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.batch { display: flex; flex-direction: column; gap: 10px; border-top: 3px solid var(--c); }
+.batch-title { all: unset; cursor: pointer; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.batch-title b { font-weight: 500; overflow-wrap: anywhere; }
+.batch-title small { color: var(--muted); font-size: 12px; }
+.batch-prog { display: flex; align-items: center; gap: 10px; }
+.batch-prog .bar { flex: 1; height: 8px; }
+.batch-log { display: flex; gap: 6px; flex-wrap: wrap; }
+.batch-log input { width: 92px; min-width: 0; border: 1px solid var(--line-strong); background: var(--paper); color: var(--ink); border-radius: 10px; padding: 5px 8px; font: inherit; font-size: 12.5px; }
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+.swatch { display: flex; flex-direction: column; gap: 6px; }
+.swatch-chip { height: 72px; border-radius: 14px; border: 1px solid var(--line); cursor: pointer; transition: transform .2s var(--ease); }
+.swatch-chip:hover { transform: translateY(-2px); }
+.swatch input, .kit-row input { border: 1px solid var(--line-strong); background: var(--paper); color: var(--ink); border-radius: 10px; padding: 5px 8px; font: inherit; font-size: 12.5px; min-width: 0; }
+.swatch input[type="color"] { width: 34px; height: 30px; padding: 2px; flex: none; }
+.swatch .num { flex: 1; text-transform: uppercase; }
+.kit-row { gap: 6px; flex-wrap: nowrap; margin-bottom: 8px; }
+@media (prefers-reduced-motion: reduce) { .swatch-chip { transition: none; } }

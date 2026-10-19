@@ -103,6 +103,44 @@ export const TEMPLATES: { key: string; role: string; name: string; blurb: string
       { title: "Publish it", day: 13 },
     ],
   },
+  {
+    key: "design-set", role: "design", name: "Design set for a launch", blurb: "Brief, drafts, revisions and final files for a set of designs.", days: 10,
+    steps: [
+      { title: "Get the brief: sizes, copy, deadline, references", day: 0, subtasks: ["Where each design will be posted", "Text for every design", "Examples they like"] },
+      { title: "Check the brand kit: colors, fonts, logo", day: 0 },
+      { title: "First drafts", day: 2 },
+      { title: "Send drafts for feedback", day: 3 },
+      { title: "Revision round 1", day: 5 },
+      { title: "Revision round 2 (if needed)", day: 7 },
+      { title: "Export final files in every size", day: 8 },
+      { title: "Deliver and file everything in the client folder", day: 9 },
+    ],
+  },
+  {
+    key: "video-month", role: "video", name: "Monthly video batch", blurb: "A month of short videos, from footage to scheduled.", days: 30,
+    steps: [
+      { title: "Collect footage and the list of videos for the month", day: 0 },
+      { title: "Pick hooks and music for each video", day: 2 },
+      { title: "Rough cuts of the first half", day: 5 },
+      { title: "Captions, text and color", day: 7 },
+      { title: "Send the first half for review", day: 8 },
+      { title: "Revisions and exports for the first half", day: 10 },
+      { title: "Rough cuts of the second half", day: 15 },
+      { title: "Send the second half for review", day: 18 },
+      { title: "Revisions, exports and handover", day: 21 },
+    ],
+  },
+  {
+    key: "data-project", role: "data", name: "Data entry project", blurb: "Set up, enter, check and deliver a batch of records.", days: 7,
+    steps: [
+      { title: "Get the instructions, sample and output format", day: 0, subtasks: ["Which columns and in what order", "Date and phone formats", "What to do with missing info"] },
+      { title: "Do 20 records and send them for a quick OK", day: 1 },
+      { title: "Enter the rest", day: 2 },
+      { title: "QA: check 1 in 10 records and fix mistakes", day: 5 },
+      { title: "Remove duplicates and check the totals", day: 5 },
+      { title: "Deliver and note the counts in the EOD", day: 6 },
+    ],
+  },
 ];
 
 // Creates a project from a template, with each step as a task due on its day.

@@ -10,7 +10,7 @@ import { signOut } from "@/app/(app)/actions";
 import Icon, { type IconName } from "./icon";
 import ClientAvatar from "./client-avatar";
 import { openFeedback } from "./feedback";
-import { portalTabs } from "@/lib/roles";
+import { portalTabs, rolePages } from "@/lib/roles";
 
 const ME: [string, string, IconName][] = [
   ["/calendar", "My calendar", "schedule"],
@@ -105,7 +105,7 @@ export default function Sidebar({ clients, name, owner = false }: { clients: Cli
             ))}
             {item("/clients", "All clients", "clients", path === "/clients")}
             <div className="nav-h">Workspace</div>
-            {WORKSPACE.map(([href, label, icon]) => item(href, label, icon, path.startsWith(href)))}
+            {[...WORKSPACE, ...rolePages(clients)].map(([href, label, icon]) => item(href, label, icon, path.startsWith(href)))}
             <div className="nav-h" />
             {item("/automations", "Automations", "auto", path === "/automations")}
             {owner && item("/owner", "Friends beta", "clients", path === "/owner")}

@@ -8,7 +8,7 @@ import { signOut } from "@/app/(app)/actions";
 import Icon, { type IconName } from "./icon";
 import ClientAvatar from "./client-avatar";
 import { openFeedback } from "./feedback";
-import { portalTabs } from "@/lib/roles";
+import { portalTabs, rolePages } from "@/lib/roles";
 
 const TABS: [string, string, IconName][] = [
   ["/", "Today", "today"],
@@ -82,7 +82,7 @@ export default function MobileNav({ clients }: { clients: Client[] }) {
             )}
             <div className="sheet-h">Everything else</div>
             <div className="sheet-grid">
-              {ALL.map(([href, label, icon]) => (
+              {[...ALL, ...rolePages(clients)].map(([href, label, icon]) => (
                 <Link key={href} href={href}>
                   <Icon name={icon} />
                   <span>{label}</span>
