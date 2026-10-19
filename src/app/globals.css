@@ -56,6 +56,20 @@ img { max-width: 100%; }
   --glass: rgba(31,23,18,.85); --good: #7DB896; --warn: #D9A55E; --bad: #E08B83; --on-accent: #17110D; --blush: rgba(217,169,163,.16); --rose: #E2B4AE; --rose-ink: #F0C9C4; --lavender: rgba(169,150,198,.18); --lilac: #BBA8D8; --lilac-ink: #D9CCEE;
   --shadow: 0 24px 60px -24px rgba(0,0,0,.8); color-scheme: dark; }
 
+/* Accent colors (Settings › Theme). Coffee is the default and needs no rule. */
+:root[data-accent="rose"] { --accent: #B8707A; --accent-ink: #96505A; --accent-soft: #D9A9A3; }
+:root[data-theme="dark"][data-accent="rose"] { --accent: #E2A9B0; --accent-ink: #F0C9C4; --accent-soft: #B8707A; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"])[data-accent="rose"] { --accent: #E2A9B0; --accent-ink: #F0C9C4; --accent-soft: #B8707A; } }
+:root[data-accent="lavender"] { --accent: #8673AE; --accent-ink: #5A4880; --accent-soft: #BBA8D8; }
+:root[data-theme="dark"][data-accent="lavender"] { --accent: #BBA8D8; --accent-ink: #D9CCEE; --accent-soft: #8673AE; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"])[data-accent="lavender"] { --accent: #BBA8D8; --accent-ink: #D9CCEE; --accent-soft: #8673AE; } }
+:root[data-accent="sage"] { --accent: #6E8B6A; --accent-ink: #4F6B4C; --accent-soft: #A9BFA5; }
+:root[data-theme="dark"][data-accent="sage"] { --accent: #A9C2A5; --accent-ink: #C8DBC5; --accent-soft: #6E8B6A; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"])[data-accent="sage"] { --accent: #A9C2A5; --accent-ink: #C8DBC5; --accent-soft: #6E8B6A; } }
+:root[data-accent="ocean"] { --accent: #5F7F9A; --accent-ink: #446078; --accent-soft: #9FB6C9; }
+:root[data-theme="dark"][data-accent="ocean"] { --accent: #9FBAD2; --accent-ink: #C3D6E6; --accent-soft: #5F7F9A; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"])[data-accent="ocean"] { --accent: #9FBAD2; --accent-ink: #C3D6E6; --accent-soft: #5F7F9A; } }
+
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body { background: var(--bg); color: var(--ink); font: 400 14px/1.6 var(--font); -webkit-font-smoothing: antialiased; }
@@ -1003,3 +1017,13 @@ table.an-sheet input { border-color: var(--line-strong); background: var(--paper
 .lightbox-body iframe { width: min(900px, 100%); height: 100%; border: 0; background: #fff; border-radius: 8px; }
 .dlv-cover { width: calc(100% + 24px); margin: -10px -12px 2px; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 11px 11px 0 0; display: block; background: var(--tint-strong); }
 @media (prefers-reduced-motion: reduce) { .canva-item img, .drop-zone { transition: none; } }
+
+/* theme picker */
+.theme-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 8px 0; }
+.theme-row > .small { width: 56px; }
+.swatch-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.accent-pick { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 99px; border: 1px solid var(--line-strong); background: var(--paper); color: var(--ink); font: inherit; font-size: 12.5px; cursor: pointer; transition: border-color .2s, box-shadow .2s; }
+.accent-pick.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.accent-dot { width: 22px; height: 22px; border-radius: 50%; flex: none; border: 1px solid var(--line); }
+html { transition: background-color .3s var(--ease); }
+@media (prefers-reduced-motion: reduce) { .accent-pick, html { transition: none; } }
