@@ -29,7 +29,7 @@ function Eod({ client: c, sender }: { client: Client; sender: string }) {
   const [kind, setKind] = useState<Kind>(c.report_cadence === "Weekly" ? "week" : "day");
   const [day, setDay] = useState(() => todayIn(tz));
   const [edited, setEdited] = useState<string | null>(null);
-  const [busy, setBusy] = useState<"" | "ai" | "save">("");
+  const [busy, setBusy] = useState<"" | "save">("");
 
   const start = kind === "week" ? weekStartYmd(day) : day;
   const days = kind === "week" ? [...Array(7)].map((_, i) => addDays(start, i)) : [day];
@@ -57,22 +57,7 @@ function Eod({ client: c, sender }: { client: Client; sender: string }) {
   const notes = (list: Entry[]) => [...new Set(list.map((e) => e.note.trim()).filter(Boolean))];
   const nextUp = (open ?? []).filter((t) => !t.due_date || t.due_date < addDays(end, 2));
 
-  // The plain facts, used for the instant draft and handed to AI to write from.
-  const facts = (() => {
-    const L: string[] = [`Hours worked: ${hm(total)}${planned ? ` (usual hours: ${hm(planned)})` : ""}`];
-    const byDay = days.map((d) => ({ d, es: (entries ?? []).filter((e) => dateOf(e.started_at) === d), ts: (done ?? []).filter((t) => t.done_at && dateOf(t.done_at) === d) })).filter((x) => x.es.length || x.ts.length);
-    byDay.forEach(({ d, es, ts }) => {
-      if (kind === "week") L.push(`\n${dayName(d, { weekday: "long", month: "short", day: "numeric" })}: ${hm(es.reduce((a, e) => a + e.minutes, 0))}`);
-      else L.push("\nTime log:");
-      es.forEach((e) => L.push(`- ${clock(e.started_at)} ${zone}, ${hm(e.minutes)}: ${e.note || "(no note)"}`));
-      if (ts.length) { L.push(kind === "week" ? "Completed:" : "\nCompleted tasks:"); ts.forEach((t) => L.push(`- ${t.title}`)); }
-    });
-    if (!byDay.length) L.push("\nNo time or finished tasks recorded for this period yet.");
-    if (nextUp.length) { L.push("\nOpen or coming up:"); nextUp.forEach((t) => L.push(`- ${t.title}${t.due_date ? ` (due ${dayName(t.due_date, { weekday: "short", month: "short", day: "numeric" })})` : ""}`)); }
-    return L.join("\n");
-  })();
-
-  // An instant, plain draft so there's always something to send.
+  // The report, written from your logged time and tasks. Edit it freely before you send it.
   const draft = (() => {
     const L = [`Hi ${first},`, "", kind === "week" ? `Here's my weekly summary for ${periodLabel.replace("Week of ", "the week of ")}.` : `Here's my EOD for ${periodLabel}.`, "", `Hours worked: ${hm(total)}`];
     if (kind === "week") {
@@ -96,17 +81,6 @@ function Eod({ client: c, sender }: { client: Client; sender: string }) {
   const move = (n: number) => { setEdited(null); setDay(n === 0 ? todayIn(tz) : addDays(day, n * (kind === "week" ? 7 : 1))); };
   const switchKind = (k: Kind) => { setEdited(null); setKind(k); };
 
-  async function writeWithAi() {
-    setBusy("ai");
-    try {
-      const res = await fetch("/api/eod", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ kind, client: clientLabel(c), contact: first, sender, period: `${periodLabel} (${zone})`, facts, draft: edited ?? report?.body }) });
-      const j = (await res.json()) as { text?: string; error?: string };
-      if (!res.ok || !j.text) return toast(j.error || "AI writing didn't respond. Try again.");
-      setEdited(j.text);
-      toast("Written. Read it over, then save or copy.");
-    } catch { toast("Could not reach AI writing. Check your connection."); }
-    finally { setBusy(""); }
-  }
   async function save(sent: boolean) {
     setBusy("save");
     const { error } = await supabase().from("reports").upsert({ client_id: c.id, kind, period_start: start, body: text, ...(sent ? { sent_at: new Date().toISOString() } : {}) }, { onConflict: "user_id,client_id,kind,period_start" });
@@ -142,8 +116,7 @@ function Eod({ client: c, sender }: { client: Client; sender: string }) {
           </h3>
           <textarea className="eod" value={loading ? "Gathering your time and tasks…" : text} readOnly={loading} onChange={(e) => setEdited(e.target.value)} aria-label="Report text" />
           <div className="row">
-            <button className="btn solid" onClick={writeWithAi} disabled={loading || busy !== ""}><Icon name="spark" />{busy === "ai" ? "Writing…" : edited || report ? "Rewrite with AI" : "Write with AI"}</button>
-            <button className="btn" onClick={copy} disabled={loading}><Icon name="copy" />Copy</button>
+            <button className="btn solid" onClick={copy} disabled={loading}><Icon name="copy" />Copy</button>
             <span className="grow" />
             {(edited !== null || report) && <button className="btn ghost small" onClick={() => setEdited(draft)} disabled={loading}>Start over from my data</button>}
             <button className="btn" onClick={() => save(false)} disabled={loading || busy !== ""}>Save draft</button>

@@ -20,7 +20,7 @@ export default async function ClientReports({ params }: { params: Promise<{ id: 
           <div style={{ minWidth: 0 }}>
             <div className="eyebrow">Client portal · Reports</div>
             <h1 style={{ overflowWrap: "anywhere" }}>{clientLabel(c)}</h1>
-            <p>Built from the time you log and the tasks you tick off. Let AI polish it, then copy it into Slack or email.</p>
+            <p>Built from the time you log and the tasks you tick off. Edit it, then copy it into Slack or email.</p>
           </div>
         </div>
         <Link className="btn" href={`/clients/${c.id}`}>Overview</Link>

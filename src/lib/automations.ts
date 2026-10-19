@@ -63,7 +63,7 @@ export function plannedNudges(s: AutoSettings, d: AutoData, now: number): Nudge[
           out.push({
             key: `eod:${c.id}:${day}`, kind: "eod", url: `/clients/${c.id}/reports`,
             title: `${weekly ? "Weekly report" : "EOD"} for ${clientLabel(c)}`,
-            body: `Your shift ends at ${at(end)}. Tap to write it, or let AI draft it from your time.`,
+            body: `Your shift ends at ${at(end)}. Tap to open it. It is already drafted from your logged time.`,
             at: end - s.eod.before * 60000, until: end + 4 * 3600000,
           });
         }

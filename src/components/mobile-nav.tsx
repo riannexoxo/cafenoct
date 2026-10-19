@@ -7,6 +7,7 @@ import { clientLabel, type Client } from "@/lib/types";
 import { signOut } from "@/app/(app)/actions";
 import Icon, { type IconName } from "./icon";
 import ClientAvatar from "./client-avatar";
+import { openFeedback } from "./feedback";
 import { portalTabs } from "@/lib/roles";
 
 const TABS: [string, string, IconName][] = [
@@ -90,6 +91,7 @@ export default function MobileNav({ clients }: { clients: Client[] }) {
             </div>
             <div className="modal-foot">
               <form action={signOut} className="left"><button className="btn" type="submit">Sign out</button></form>
+              <button className="btn" type="button" onClick={() => { setOpen(false); openFeedback(); }}>Feedback</button>
               <button className="btn solid" onClick={() => setOpen(false)}>Close</button>
             </div>
           </div>

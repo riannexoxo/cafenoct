@@ -11,6 +11,6 @@ export const getClients = cache(async () => {
 
 export const getProfile = cache(async () => {
   const supabase = await createClient();
-  const { data } = await supabase.from("profiles").select("user_id,name,currency,weekly_goal,business,invoice_email").maybeSingle<Profile>();
+  const { data } = await supabase.from("profiles").select("user_id,name,currency,weekly_goal,business,invoice_email,settings").maybeSingle<Profile>();
   return data;
 });

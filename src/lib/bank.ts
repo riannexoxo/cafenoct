@@ -65,3 +65,59 @@ export const STARTER: Starter[] = [
   { kind: "resource", title: "Pinterest Trends", body: "What's rising on Pinterest by season.", url: "https://trends.pinterest.com/" },
   { kind: "resource", title: "Instagram Professional Dashboard", body: "Your Instagram insights, tips and account health.", url: "https://www.instagram.com/accounts/professional_dashboard/" },
 ];
+
+// Quick-write without AI: proven formulas filled in with your topic. A starting point to edit, not a final post.
+const FORMULAS: Partial<Record<Kind, [string, string][]>> = {
+  hook: [
+    ["Mistakes", "3 mistakes people make with {t} (the last one surprised me)"],
+    ["Stop scrolling", "Stop scrolling if you've ever struggled with {t}."],
+    ["Nobody tells you", "Nobody tells you this about {t}…"],
+    ["Before / after", "What {t} looked like before vs. after we changed one thing"],
+    ["Myth", "{T} myth: you need more time. The truth is simpler."],
+    ["Quick win", "Try this {t} tip today. It takes under 5 minutes."],
+    ["POV", "POV: you finally figured out {t}"],
+    ["Save this", "Save this for the next time you're stuck on {t}."],
+  ],
+  caption: [
+    ["Problem → fix", "Struggling with {t}? You're not alone.\n\nHere's what helped:\n1. [first step]\n2. [second step]\n3. [third step]\n\nWhich one will you try first?"],
+    ["Story", "A few weeks ago, [what happened with {t}].\n\nHere's what we learned: [lesson].\n\nHave you been there too?"],
+    ["List", "{T}, in 3 simple steps:\n\n→ [step one]\n→ [step two]\n→ [step three]\n\nSave this so you don't forget."],
+    ["Behind the scenes", "Behind the scenes of {t} today ✨\n\n[what you're working on and why it matters]\n\nWant to see more of this?"],
+    ["FAQ", "You asked: \"[question about {t}]\"\n\nShort answer: [answer].\nLonger answer: [details].\n\nDrop your next question below 👇"],
+    ["Testimonial", "\"[client quote about {t}]\"\n— [client name]\n\nThis is why we do what we do. [CTA]"],
+  ],
+  cta: [
+    ["Save", "Save this so you have it the next time you need help with {t}."],
+    ["Comment", "Comment \"{T}\" and I'll send you the details."],
+    ["Share", "Send this to a friend who's been talking about {t}."],
+    ["Follow", "Follow for more simple {t} tips every week."],
+    ["Link", "Ready to sort out {t}? Tap the link in bio."],
+    ["DM", "DM us \"{t}\" to book a spot."],
+  ],
+  idea: [
+    ["Tips carousel", "5 quick {t} tips, one per slide, ending with a save prompt."],
+    ["Myth vs fact", "Reel: 3 common {t} myths, each busted in one line."],
+    ["Day in the life", "Behind-the-scenes video of a day working on {t}."],
+    ["Client win", "Before/after or testimonial post about {t}."],
+    ["Q&A", "Answer the most common question about {t} in a short video."],
+    ["Checklist", "A printable-style {t} checklist graphic people will save."],
+  ],
+  pillar: [
+    ["Educate", "Tips and how-tos about {t}"],
+    ["Behind the scenes", "How {t} happens day to day"],
+    ["Social proof", "Results, reviews and client stories about {t}"],
+    ["Community", "Questions, polls and conversations around {t}"],
+    ["Promote", "Offers, launches and ways to work together on {t}"],
+  ],
+};
+
+export function quickWrite(kind: Kind, topic: string): { title: string; body: string }[] {
+  const t = topic.trim() || "[topic]", T = t.charAt(0).toUpperCase() + t.slice(1);
+  if (kind === "hashtags") {
+    const words = t.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, "").split(/\s+/).filter((w) => w.length > 2);
+    const joined = words.join("");
+    const tags = [...new Set([joined, ...words, `${joined}tips`, `${words[0] ?? joined}community`, `${joined}ideas`].filter(Boolean))].slice(0, 8).map((w) => `#${w}`);
+    return [{ title: `${T} set`, body: tags.join(" ") }];
+  }
+  return (FORMULAS[kind] ?? []).map(([title, body]) => ({ title, body: body.replaceAll("{t}", t).replaceAll("{T}", T) }));
+}

@@ -2,8 +2,7 @@
 
 import { useState, useSyncExternalStore } from "react";
 import { supabase, useRows } from "@/lib/use-rows";
-import { BANK_COLS, STARTER, kindOf, type BankItem, type Kind } from "@/lib/bank";
-import { PLATFORMS } from "@/lib/posts";
+import { BANK_COLS, STARTER, kindOf, quickWrite, type BankItem, type Kind } from "@/lib/bank";
 import { toast } from "@/lib/toast";
 import { clientLabel, type Client } from "@/lib/types";
 import Modal from "./modal";
@@ -26,7 +25,7 @@ function Kit({ client }: { client?: Client; clients: Client[] }) {
   const [q, setQ] = useState("");
   const [edit, setEdit] = useState<Partial<BankItem> | null>(null);
   const [showStarter, setShowStarter] = useState(false);
-  const [ai, setAi] = useState<{ topic: string; platform: string; busy: boolean; items: { title: string; body: string }[] }>({ topic: "", platform: "Instagram", busy: false, items: [] });
+  const [ai, setAi] = useState<{ topic: string; items: { title: string; body: string }[] }>({ topic: "", items: [] });
   const [items, reload, setItems] = useRows<BankItem>(`bank:${client?.id ?? "mine"}`, (s) => {
     const base = s.from("bank_items").select(BANK_COLS).order("starred", { ascending: false }).order("position").order("created_at", { ascending: false });
     return client ? base.or(`client_id.eq.${client.id},client_id.is.null`) : base.is("client_id", null);
@@ -35,8 +34,6 @@ function Kit({ client }: { client?: Client; clients: Client[] }) {
   const all = items ?? [];
   const kinds: Kind[] = section === "brand" ? ["pillar", "voice"] : [section];
   const match = (i: BankItem) => !q || `${i.title} ${i.body} ${i.tags.join(" ")}`.toLowerCase().includes(q.toLowerCase());
-  const pillars = all.filter((i) => i.kind === "pillar" && (!client || i.client_id === client.id)).map((i) => i.title || i.body);
-  const voice = all.filter((i) => i.kind === "voice" && (!client || i.client_id === client.id)).map((i) => i.body).join("\n");
 
   async function save(it: Partial<BankItem>) {
     const row = { client_id: it.client_id === undefined ? client?.id ?? null : it.client_id, kind: it.kind!, title: (it.title ?? "").trim(), body: (it.body ?? "").trim(), url: (it.url ?? "").trim(), tags: it.tags ?? [], status: it.status ?? "" };
@@ -66,23 +63,17 @@ function Kit({ client }: { client?: Client; clients: Client[] }) {
     if (error) return toast("Could not add it. Try again.");
     toast("Added to the content calendar's ideas. Drag it onto a day.");
   }
-  async function writeWithAi() {
-    const kind = section === "brand" ? "pillar" : section;
-    if (kind === "voice" || kind === "resource") return;
-    setAi((a) => ({ ...a, busy: true, items: [] }));
-    try {
-      const r = await fetch("/api/smm", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ kind, client: client ? clientLabel(client) : "my own brand", services: client?.services, topic: ai.topic, platform: ai.platform, pillars, voice, count: kind === "pillar" ? 5 : 6 }) });
-      const j = (await r.json()) as { items?: { title: string; body: string }[]; error?: string };
-      if (!r.ok || !j.items) { toast(j.error || "AI didn't respond. Try again."); return setAi((a) => ({ ...a, busy: false })); }
-      setAi((a) => ({ ...a, busy: false, items: j.items! }));
-    } catch { toast("Could not reach AI writing."); setAi((a) => ({ ...a, busy: false })); }
+  function writeQuick() {
+    const kind = (section === "brand" ? "pillar" : section) as Kind;
+    if (!ai.topic.trim()) return toast("Type a topic first, like wash day tips.");
+    setAi((a) => ({ ...a, items: quickWrite(kind, a.topic) }));
   }
 
   const list = all.filter((i) => kinds.includes(i.kind) && match(i));
   const savedBodies = new Set(all.map((i) => i.body.trim()));
   const starters = STARTER.filter((s) => kinds.includes(s.kind) && !savedBodies.has(s.body.trim()));
   const aiKind = section === "brand" ? "pillar" : section;
-  const canAi = aiKind !== "resource";
+  const canAi = aiKind !== "resource" && aiKind !== "voice";
 
   const card = (i: BankItem) => {
     const k = kindOf(i.kind);
@@ -115,7 +106,7 @@ function Kit({ client }: { client?: Client; clients: Client[] }) {
       </div></div>
 
       <div className="row">
-        <p className="small muted grow" style={{ margin: 0 }}>{section === "brand" ? `Who ${client ? clientLabel(client) : "you"} are on social: the pillars every post fits into and the voice it's written in. AI uses these when it writes.` : kindOf(section)?.hint}</p>
+        <p className="small muted grow" style={{ margin: 0 }}>{section === "brand" ? `Who ${client ? clientLabel(client) : "you"} are on social: the pillars every post fits into and the voice it's written in.` : kindOf(section)?.hint}</p>
         <input className="search" style={{ width: 180 }} placeholder="Search" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search the toolkit" />
         {starters.length > 0 && <button className={`btn${showStarter ? " solid" : ""}`} onClick={() => setShowStarter(!showStarter)}><Icon name="spark" />Starter library</button>}
         {section === "brand" ? (
@@ -130,10 +121,9 @@ function Kit({ client }: { client?: Client; clients: Client[] }) {
         <div className="card ai-box">
           <div className="row" style={{ gap: 8 }}>
             <Icon name="spark" />
-            <b style={{ fontWeight: 500 }}>Write {section === "brand" ? "pillars" : kindOf(section)?.label.toLowerCase()} with AI</b>
+            <b style={{ fontWeight: 500 }}>Quick-write {section === "brand" ? "pillars" : kindOf(section)?.label.toLowerCase()}</b>
             <input className="search grow" style={{ minWidth: 160 }} placeholder={section === "brand" ? "What the business does and who it's for" : "Topic or angle (e.g. wash day tips, holiday promo)"} value={ai.topic} onChange={(e) => setAi((a) => ({ ...a, topic: e.target.value }))} aria-label="Topic" />
-            <select className="search" style={{ width: "auto" }} value={ai.platform} onChange={(e) => setAi((a) => ({ ...a, platform: e.target.value }))} aria-label="Platform">{PLATFORMS.slice(0, 5).map((p) => <option key={p.name}>{p.name}</option>)}</select>
-            <button className="btn solid" disabled={ai.busy} onClick={writeWithAi}>{ai.busy ? "Writing…" : "Write"}</button>
+            <button className="btn solid" onClick={writeQuick}>Fill in</button>
           </div>
           {ai.items.length > 0 && (
             <>
@@ -175,7 +165,7 @@ function Kit({ client }: { client?: Client; clients: Client[] }) {
       ) : (
         <div className="card empty">
           <b>{q ? "Nothing matches that search" : `No ${section === "brand" ? "pillars or voice notes" : kindOf(section)?.label.toLowerCase()} yet`}</b>
-          <span>{q ? "Try another word." : starters.length ? "Start from the starter library, write some with AI, or add your own." : "Add your own, or write some with AI."}</span>
+          <span>{q ? "Try another word." : starters.length ? "Start from the starter library, quick-write some, or add your own." : "Add your own, or quick-write some."}</span>
         </div>
       )}
 

@@ -21,6 +21,6 @@ export type Client = {
   personal: boolean; // your own portal: no billing or hours
 };
 
-export type Profile = { user_id: string; name: string; currency: string; weekly_goal: number; business: string; invoice_email: string };
+export type Profile = { user_id: string; name: string; currency: string; weekly_goal: number; business: string; invoice_email: string; settings?: { onboarded?: boolean; tz?: string; my_roles?: string[] } & Record<string, unknown> };
 
 export const clientLabel = (c: Pick<Client, "name" | "company">) => c.company || c.name;

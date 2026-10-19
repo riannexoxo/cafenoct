@@ -9,6 +9,7 @@ import { rateText } from "@/lib/format";
 import { signOut } from "@/app/(app)/actions";
 import Icon, { type IconName } from "./icon";
 import ClientAvatar from "./client-avatar";
+import { openFeedback } from "./feedback";
 import { portalTabs } from "@/lib/roles";
 
 const ME: [string, string, IconName][] = [
@@ -26,7 +27,7 @@ const WORKSPACE: [string, string, IconName][] = [
   ["/toolkit", "Toolkit", "spark"],
   ["/analytics", "Analytics", "time"],
 ];
-export default function Sidebar({ clients, name }: { clients: Client[]; name: string }) {
+export default function Sidebar({ clients, name, owner = false }: { clients: Client[]; name: string; owner?: boolean }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
@@ -107,12 +108,14 @@ export default function Sidebar({ clients, name }: { clients: Client[]; name: st
             {WORKSPACE.map(([href, label, icon]) => item(href, label, icon, path.startsWith(href)))}
             <div className="nav-h" />
             {item("/automations", "Automations", "auto", path === "/automations")}
+            {owner && item("/owner", "Friends beta", "clients", path === "/owner")}
             {item("/settings", "Settings", "settings", path === "/settings")}
           </>
         )}
       </nav>
 
       <div className="rail-foot">
+        <button className="btn small ghost" type="button" onClick={openFeedback}><Icon name="chat" />Send feedback</button>
         <form action={signOut}>
           <button className="btn small ghost" type="submit">Sign out</button>
         </form>
