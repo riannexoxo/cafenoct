@@ -1,5 +1,6 @@
 import { adminClient, gather, pushTo } from "@/lib/automations-server";
 import { autoSettings, dueNudges } from "@/lib/automations";
+import { syncMany, type Account } from "@/lib/social";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -36,5 +37,13 @@ export async function GET(request: Request) {
       sent += await pushTo(sb, mine, { title: n.title, body: n.body, url: n.url, tag: n.key });
     }
   }
-  return Response.json({ ok: true, sent });
+
+  // Connected social accounts refresh their numbers every 6 hours, a few per run.
+  const stale = new Date(now - 6 * 3600000).toISOString();
+  const { data: accounts } = await sb.from("social_accounts").select("id,user_id,client_id,platform,external_id,name,import")
+    .or(`last_synced_at.is.null,last_synced_at.lt.${stale}`).order("last_synced_at", { ascending: true, nullsFirst: true }).limit(4);
+  const tz = (uid: string) => autoSettings(((profiles ?? []) as Row[]).find((p) => p.user_id === uid)?.settings?.automations).tz;
+  const social = accounts?.length ? await syncMany(sb, accounts as Account[], tz) : null;
+
+  return Response.json({ ok: true, sent, synced: social ? social.updated + social.added : 0 });
 }
