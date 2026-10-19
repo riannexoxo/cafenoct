@@ -34,5 +34,5 @@ export async function notify(title: string, body: string) {
   if (typeof Notification === "undefined") return false;
   if (Notification.permission === "default") await Notification.requestPermission();
   if (Notification.permission !== "granted") return false;
-  try { new Notification(title, { body, icon: "/icon.png" }); return true; } catch { return false; }
+  try { new Notification(title, { body, icon: "/brand/icon-192.png" }); return true; } catch { return false; }
 }

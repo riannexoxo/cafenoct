@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <style>
+    .m { fill: #4A2E22; } .s { stroke: #4A2E22; } .c { fill: #C99A70; } .b { fill: #D9A5A8; }
+    @media (prefers-color-scheme: dark) { .m { fill: #F5EBDD; } .s { stroke: #F5EBDD; } .c { fill: #C99A70; } .b { fill: #E8B4B8; } }
+  </style>
+  <path class="s" d="M31 3.5c-3.2 2.8-3.2 5.6 0 8.4s3.2 5.6 0 8.4" fill="none" stroke-width="3.6" stroke-linecap="round"/>
+  <path class="m" d="M6 27.5c0-3.2 6-5.5 22-5.5s22 2.3 22 5.5V38c0 11.5-8.6 18-22 18S6 49.5 6 38z"/>
+  <ellipse class="c" cx="28" cy="27.6" rx="16.5" ry="3.1"/>
+  <path class="s" d="M49 31.5h3.2a7.6 7.6 0 0 1 0 15.2H47" fill="none" stroke-width="5" stroke-linecap="round"/>
+  <path class="b" d="M12.5 56.5h31c-2.4 3.2-8 4.5-15.5 4.5s-13.1-1.3-15.5-4.5z"/>
+</svg>
