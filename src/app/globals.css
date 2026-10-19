@@ -57,18 +57,22 @@ img { max-width: 100%; }
   --shadow: 0 24px 60px -24px rgba(0,0,0,.8); color-scheme: dark; }
 
 /* Accent colors (Settings › Theme). Coffee is the default and needs no rule. */
-:root[data-accent="rose"] { --accent: #B8707A; --accent-ink: #96505A; --accent-soft: #D9A9A3; }
-:root[data-theme="dark"][data-accent="rose"] { --accent: #E2A9B0; --accent-ink: #F0C9C4; --accent-soft: #B8707A; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"])[data-accent="rose"] { --accent: #E2A9B0; --accent-ink: #F0C9C4; --accent-soft: #B8707A; } }
-:root[data-accent="lavender"] { --accent: #8673AE; --accent-ink: #5A4880; --accent-soft: #BBA8D8; }
-:root[data-theme="dark"][data-accent="lavender"] { --accent: #BBA8D8; --accent-ink: #D9CCEE; --accent-soft: #8673AE; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"])[data-accent="lavender"] { --accent: #BBA8D8; --accent-ink: #D9CCEE; --accent-soft: #8673AE; } }
-:root[data-accent="sage"] { --accent: #6E8B6A; --accent-ink: #4F6B4C; --accent-soft: #A9BFA5; }
-:root[data-theme="dark"][data-accent="sage"] { --accent: #A9C2A5; --accent-ink: #C8DBC5; --accent-soft: #6E8B6A; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"])[data-accent="sage"] { --accent: #A9C2A5; --accent-ink: #C8DBC5; --accent-soft: #6E8B6A; } }
-:root[data-accent="ocean"] { --accent: #5F7F9A; --accent-ink: #446078; --accent-soft: #9FB6C9; }
-:root[data-theme="dark"][data-accent="ocean"] { --accent: #9FBAD2; --accent-ink: #C3D6E6; --accent-soft: #5F7F9A; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"])[data-accent="ocean"] { --accent: #9FBAD2; --accent-ink: #C3D6E6; --accent-soft: #5F7F9A; } }
+:root[data-accent="rose"] { --accent: #B8707A; --accent-ink: #96505A; --accent-soft: #D9A9A3; --blush: #F6DADE; }
+:root[data-theme="dark"][data-accent="rose"] { --accent: #E2A9B0; --accent-ink: #F0C9C4; --accent-soft: #B8707A; --blush: rgba(226,169,176,.2); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"])[data-accent="rose"] { --accent: #E2A9B0; --accent-ink: #F0C9C4; --accent-soft: #B8707A; --blush: rgba(226,169,176,.2); } }
+:root[data-accent="lavender"] { --accent: #8673AE; --accent-ink: #5A4880; --accent-soft: #BBA8D8; --blush: #E9E1F4; }
+:root[data-theme="dark"][data-accent="lavender"] { --accent: #BBA8D8; --accent-ink: #D9CCEE; --accent-soft: #8673AE; --blush: rgba(187,168,216,.2); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"])[data-accent="lavender"] { --accent: #BBA8D8; --accent-ink: #D9CCEE; --accent-soft: #8673AE; --blush: rgba(187,168,216,.2); } }
+:root[data-accent="sage"] { --accent: #6E8B6A; --accent-ink: #4F6B4C; --accent-soft: #A9BFA5; --blush: #E1EADF; }
+:root[data-theme="dark"][data-accent="sage"] { --accent: #A9C2A5; --accent-ink: #C8DBC5; --accent-soft: #6E8B6A; --blush: rgba(169,194,165,.18); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"])[data-accent="sage"] { --accent: #A9C2A5; --accent-ink: #C8DBC5; --accent-soft: #6E8B6A; --blush: rgba(169,194,165,.18); } }
+:root[data-accent="ocean"] { --accent: #5F7F9A; --accent-ink: #446078; --accent-soft: #9FB6C9; --blush: #DDE7F0; }
+:root[data-theme="dark"][data-accent="ocean"] { --accent: #9FBAD2; --accent-ink: #C3D6E6; --accent-soft: #5F7F9A; --blush: rgba(159,186,210,.18); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"])[data-accent="ocean"] { --accent: #9FBAD2; --accent-ink: #C3D6E6; --accent-soft: #5F7F9A; --blush: rgba(159,186,210,.18); } }
+/* With a color accent, main buttons take the accent too (coffee keeps the espresso buttons). */
+:root[data-accent] .btn.solid { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--on-accent); }
+:root[data-accent] .npill i { background: color-mix(in srgb, var(--accent) 18%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent); }
+:root[data-accent] .tabbar :is(button, a).on { color: var(--accent-ink); }
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }
