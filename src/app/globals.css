@@ -1086,3 +1086,10 @@ html, body { transition: background-color .35s var(--ease), color .35s var(--eas
 @media (prefers-reduced-motion: reduce) { .note, .note-add { transition: none; } .note:hover { transform: none; } }
 
 .loading-nocti { display: flex; align-items: center; gap: 12px; color: var(--muted); font-weight: 700; }
+
+/* Empty states everywhere get sleepy Nocti (components that render their own <Nocti> are left alone). */
+.empty:not(:has(.nocti-rig))::before { content: ""; display: block; width: 72px; height: 72px; margin: 0 auto 6px;
+  background: url(/nocti/sleepy.png) center / contain no-repeat; animation: empty-doze 4.5s ease-in-out infinite; transform-origin: 50% 90%; }
+.empty .nocti-rig { margin: 0 auto 6px; }
+@keyframes empty-doze { 50% { transform: translateY(-3px) scale(1.02, .98); } }
+@media (prefers-reduced-motion: reduce) { .empty::before { animation: none; } }

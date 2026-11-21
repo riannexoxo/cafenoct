@@ -12,6 +12,7 @@ import ClientAvatar from "./client-avatar";
 import { openFeedback } from "./feedback";
 import { portalTabs, rolePages } from "@/lib/roles";
 import { openPalette } from "./command-palette";
+import { openTour } from "./tour";
 
 const ME: [string, string, IconName][] = [
   ["/calendar", "My calendar", "schedule"],
@@ -120,6 +121,7 @@ export default function Sidebar({ clients, name, owner = false }: { clients: Cli
       </nav>
 
       <div className="rail-foot">
+        <button className="btn small ghost" type="button" onClick={openTour}><Icon name="spark" />Take the tour</button>
         <button className="btn small ghost" type="button" onClick={openFeedback}><Icon name="chat" />Send feedback</button>
         <form action={signOut}>
           <button className="btn small ghost" type="submit">Sign out</button>

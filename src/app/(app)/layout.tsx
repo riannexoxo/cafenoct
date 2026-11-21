@@ -8,6 +8,7 @@ import DesktopBridge from "@/components/desktop-bridge";
 import Feedback from "@/components/feedback";
 import { ThemeSync } from "@/components/theme-picker";
 import CommandPalette from "@/components/command-palette";
+import Tour from "@/components/tour";
 import { getClients, getProfile } from "@/lib/data";
 import { ownerId } from "@/lib/owner";
 
@@ -35,6 +36,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <DesktopBridge />
       <Feedback />
       <CommandPalette />
+      <Tour hidden={!!(profile?.settings?.tour as { hidden?: boolean } | undefined)?.hidden} seen={profile?.settings?.tour !== undefined} />
       <ThemeSync saved={(profile?.settings?.theme as string | undefined) ?? ""} />
     </div>
   );
