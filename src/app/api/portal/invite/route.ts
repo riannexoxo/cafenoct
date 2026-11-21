@@ -34,6 +34,9 @@ export async function POST(request: Request) {
   const origin = new URL(request.url).origin;
   if (same?.invite_code) return Response.json({ link: `${origin}/login?invite=${same.invite_code}` });
   if (mine.filter((r) => r.status === "invited").length >= MAX_OPEN) return bad("This client already has 10 open invites. Revoke one first.");
+  // Each invite code can create an account, so open invites are also capped across all your clients.
+  const { count: open } = await sb.from("portal_access").select("id", { count: "exact", head: true }).eq("status", "invited");
+  if ((open ?? 0) >= 25) return bad("You have 25 open portal invites. Revoke some unused ones first.");
 
   const code = Array.from({ length: 10 }, () => ALPHABET[randomInt(ALPHABET.length)]).join("");
   const admin = adminClient();

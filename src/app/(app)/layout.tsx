@@ -20,7 +20,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!claims) redirect("/login");
   const [profile, all, owner] = await Promise.all([getProfile(), getClients(), ownerId()]);
   // A client's own account (invited to a portal) has no workspace of its own: send it to the portal.
+  // Accounts made from a portal invite never get a workspace, even after access is turned off.
   if (all.length === 0) {
+    if ((claims.app_metadata as { portal?: boolean } | undefined)?.portal) redirect("/portal"); // set by the server only
     const { data: portals } = await supabase.rpc("portal_clients");
     if (Array.isArray(portals) && portals.length > 0) redirect("/portal");
   }

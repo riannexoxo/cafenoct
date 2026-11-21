@@ -24,7 +24,11 @@ export async function POST(request: Request) {
   // One message for unknown and used codes, so codes can't be probed one by one.
   if (!inv || inv.used_by) return bad("That invite code isn't valid or was already used. Ask for a new one.");
 
-  const { data, error } = await sb.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { invite, name } });
+  // A client-portal invite only works for the email it was sent to, and makes a portal-only account.
+  const { data: portal } = await sb.from("portal_access").select("email").eq("invite_code", invite).is("member_id", null).neq("status", "revoked").maybeSingle<{ email: string }>();
+  if (portal && portal.email.trim().toLowerCase() !== email) return bad("This invite was sent to a different email. Use the address it was sent to.");
+
+  const { data, error } = await sb.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { invite, name }, ...(portal ? { app_metadata: { portal: true } } : {}) });
   if (error || !data.user) {
     const msg = error?.message ?? "";
     if (/already|registered|exists/i.test(msg)) return bad("There's already an account with that email. Sign in instead.");
@@ -33,6 +37,6 @@ export async function POST(request: Request) {
   }
   await sb.from("profiles").upsert({ user_id: data.user.id, name, invoice_email: email }, { onConflict: "user_id" });
   // Client-portal invite: link the new account to the portal it was sent for.
-  await sb.from("portal_access").update({ member_id: data.user.id, status: "active" }).eq("invite_code", invite).is("member_id", null);
+  if (portal) await sb.from("portal_access").update({ member_id: data.user.id, status: "active" }).eq("invite_code", invite).is("member_id", null);
   return Response.json({ ok: true });
 }

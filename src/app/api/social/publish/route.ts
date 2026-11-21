@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
   // Only files uploaded to CafeNoct's public post-media folder, so Meta fetches exactly what you planned.
   const media = (p.media ?? []).slice(0, 10);
-  if (media.some((u) => typeof u !== "string" || !u.startsWith(`${supabaseUrl}/storage/v1/object/public/post-media/${uid}/`)))
+  if (media.some((u) => typeof u !== "string" || u.includes("..") || !u.startsWith(`${supabaseUrl}/storage/v1/object/public/post-media/${uid}/`)))
     return Response.json({ error: "Upload the images and videos in CafeNoct first, so Meta can fetch them." }, { status: 400 });
   const caption = fullCaption({ hook: p.hook ?? "", caption: p.caption ?? "", hashtags: p.hashtags ?? "" });
 
