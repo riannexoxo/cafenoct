@@ -13,6 +13,8 @@ import { TheirTime } from "@/components/client-clocks";
 import PortalInvite from "@/components/portal-invite";
 import { ReportPicker } from "@/components/report-tools";
 import TimerButton from "@/components/timer-button";
+import ClientTimeline from "@/components/client-timeline";
+import ClientDetails from "@/components/client-details";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -51,6 +53,10 @@ export default async function ClientPortal({ params }: { params: Promise<{ id: s
       <div className="grid g2" style={{ alignItems: "start" }}>
         <TodoList clients={clients ?? []} clientId={c.id} />
         <Timers clients={clients ?? []} clientId={c.id} />
+      </div>
+      <div className="cr-grid">
+        <ClientTimeline clientId={c.id} />
+        <ClientDetails clientId={c.id} />
       </div>
       {!c.personal && <PortalInvite clientId={c.id} clientName={c.name.split(" ")[0] || clientLabel(c)} />}
       <div className="card small muted row" style={{ gap: 8 }}><Icon name="spark" size={16} />Projects, content and docs for this client are next to move over.</div>

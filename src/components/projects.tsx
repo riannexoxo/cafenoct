@@ -10,6 +10,7 @@ import { toast } from "@/lib/toast";
 import { clientLabel, type Client } from "@/lib/types";
 import Modal from "./modal";
 import Icon from "./icon";
+import CommentThread from "./comment-thread";
 import { Empty } from "./views/shared";
 import "@/styles/views.css";
 
@@ -154,6 +155,7 @@ function ProjectForm({ p, clients, onClose, onSaved }: { p: Partial<Project>; cl
           {p.id && <div className="field"><label htmlFor="pj-status">Status</label><select id="pj-status" value={status} onChange={(e) => setStatus(e.target.value as Project["status"])}><option>Active</option><option>On hold</option><option>Done</option></select></div>}
           {(p.id || !tpl) && <div className="field full"><label htmlFor="pj-desc">Description</label><textarea id="pj-desc" value={desc} onChange={(e) => setDesc(e.target.value)} style={{ minHeight: 70 }} /></div>}
         </div>
+        {p.id && <CommentThread entity="project" entityId={p.id} clientId={p.client_id ?? null} />}
         <div className="modal-foot">
           {p.id && <button type="button" className="btn danger left" onClick={remove}>{sure ? "Tap again to delete" : "Delete"}</button>}
           <button type="button" className="btn" onClick={onClose}>Cancel</button>

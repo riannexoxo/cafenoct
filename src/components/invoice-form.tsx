@@ -10,6 +10,7 @@ import { celebrate } from "@/lib/celebrate";
 import { clientLabel, type Client } from "@/lib/types";
 import Modal from "./modal";
 import Icon from "./icon";
+import CommentThread from "./comment-thread";
 
 export type InvoiceDraft = Partial<Invoice> & { entryIds?: string[]; markPaid?: boolean };
 export const CURRENCIES = ["USD", "PHP", "AUD", "CAD", "GBP", "EUR", "NZD", "SGD"];
@@ -146,6 +147,7 @@ export default function InvoiceForm({ inv = {}, mode = "invoice", clients, exist
             </>
           )}
         </div>
+        {inv.id && <CommentThread entity="invoice" entityId={inv.id} clientId={inv.client_id ?? null} />}
         <div className="modal-foot">
           {inv.id && <button type="button" className="btn danger left" disabled={busy} onClick={remove}>{sure ? "Tap again to delete" : "Delete"}</button>}
           {!pay && <button type="button" className="btn" onClick={copy}><Icon name="copy" />Copy as text</button>}

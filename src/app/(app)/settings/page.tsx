@@ -4,6 +4,8 @@ import PaymentEmails from "@/components/payment-emails";
 import ProfileForm from "@/components/profile-form";
 import CanvaSettings from "@/components/canva-settings";
 import ThemePicker from "@/components/theme-picker";
+import BookingSettings from "@/components/booking-settings";
+import IntakeSettings from "@/components/intake-settings";
 import { canvaReady } from "@/lib/canva";
 import Link from "next/link";
 import Icon from "@/components/icon";
@@ -20,13 +22,15 @@ export default async function Settings() {
         <div>
           <div className="eyebrow">Your account</div>
           <h1>Settings</h1>
-          <p>Your details, theme, payment emails, calendar and Canva.</p>
+          <p>Your details, theme, payment emails, calendar, booking pages, request forms and Canva.</p>
         </div>
       </div>
       <ProfileForm initial={{ name: data?.name ?? "", business: data?.business ?? "", currency: data?.currency || "USD", invoice_email: data?.invoice_email ?? "", tz: data?.settings?.tz ?? "" }} />
       <ThemePicker saved={data?.settings?.theme ?? ""} />
       <PaymentEmails connected={!!data?.inbox_key_hash} />
       <CalendarConnect connected={!!data?.gcal_url} />
+      <BookingSettings />
+      <IntakeSettings />
       <CanvaSettings ready={canvaReady()} />
       <div className="card small muted row" style={{ gap: 8 }}><Icon name="spark" size={16} />Reminders live in <Link className="linkish" href="/automations">Automations</Link>.</div>
     </>
