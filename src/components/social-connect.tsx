@@ -64,8 +64,8 @@ export default function SocialConnect({ clients, meta, tiktok }: { clients: Clie
             return (
               <div className="li soc" key={a.id}>
                 <span className="soc-av" style={{ background: p?.color }}>{/* eslint-disable-next-line @next/next/no-img-element -- small profile pictures from Meta/TikTok */}
-                  {a.avatar ? <img src={a.avatar} alt="" referrerPolicy="no-referrer" /> : p?.short}</span>
-                <span className="t">{a.name}<small>{a.platform} · {a.last_error ? <span style={{ color: "var(--bad, #b5523b)" }}>{a.last_error}</span> : ago(a.last_synced_at)}</small></span>
+                  {a.avatar ? <img loading="lazy" decoding="async" src={a.avatar} alt="" referrerPolicy="no-referrer" /> : p?.short}</span>
+                <span className="t">{a.name}<small>{a.platform} · {a.last_error ? <span style={{ color: "var(--bad)" }}>{a.last_error}</span> : ago(a.last_synced_at)}</small></span>
                 <select aria-label={`Client for ${a.name}`} className="auto-pick" value={a.client_id ?? ""} onChange={(e) => patch(a, { client_id: e.target.value || null })}>
                   <option value="">Pick a client…</option>
                   {clients.map((c) => <option key={c.id} value={c.id}>{clientLabel(c)}</option>)}

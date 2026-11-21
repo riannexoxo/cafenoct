@@ -16,7 +16,7 @@ export default async function Book({ params }: { params: Promise<{ slug: string 
   const info = ok ? ((await (await createClient()).rpc("booking_info", { p_slug: slug })).data as BookingInfo | null) : null;
   return (
     <div className="pt-shell">
-      <header className="pt-top"><span className="pt-brand"><img src={brand.logo} alt="" width={28} height={28} /><span>{brand.name}</span></span></header>
+      <header className="pt-top"><span className="pt-brand"><img src={brand.logo} alt="" fetchPriority="high" decoding="async" width={28} height={28} /><span>{brand.name}</span></span></header>
       <main className="pt-main pt-narrow">
         {info ? <BookingPage slug={slug} initial={info} /> : <CalmEmpty title="This booking page is resting" line="It may have moved or been paused. Ask for a fresh link and you'll be all set." />}
       </main>

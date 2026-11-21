@@ -231,3 +231,8 @@
   .rpt-from { align-items: flex-start; text-align: left; }
   .pt-inv summary { padding: 14px; }
 }
+
+@media (pointer: coarse) {
+  .pt-brand, .ct-share, .pin-form .btn, .pin-list .btn, .ct-foot .btn, .rpt-tools .btn, .rpt-pick input, .rpt-tools input[type="month"] { min-height: 44px; }
+  .ct-del { min-height: 44px; min-width: 44px; }
+}

@@ -36,3 +36,8 @@
 .rules-skel { height: 80px; border-radius: 12px; background: var(--tint); }
 
 .rule-form .field .small { display: block; margin-top: 4px; }
+
+@media (pointer: coarse) {
+  .rule-acts .btn { min-height: 44px; }
+  .rules-list .sw { min-width: 44px; }
+}

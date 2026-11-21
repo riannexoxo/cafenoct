@@ -65,3 +65,7 @@
   .pb-list li, .pb-days button, .pb-daylist button { transition: none; }
   .pb-days button:active, .pb-daylist button:active, .pb-slots .btn:active { transform: none; }
 }
+
+@media (pointer: coarse) {
+  .pb-actions .btn.small, .pb-days button { min-height: 44px; }
+}

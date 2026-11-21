@@ -97,7 +97,7 @@ export default async function MonthlyReport({ params }: { params: Promise<{ id: 
           </div>
           <div className="rpt-from">
             {from && <b>{from}</b>}
-            <span className="muted small"><img src={brand.logo} alt="" width={16} height={16} />Made with {brand.name}</span>
+            <span className="muted small"><img loading="lazy" decoding="async" src={brand.logo} alt="" width={16} height={16} />Made with {brand.name}</span>
           </div>
         </header>
 
@@ -146,7 +146,7 @@ export default async function MonthlyReport({ params }: { params: Promise<{ id: 
             <div className="rpt-posts">
               {dlvList.map((d) => (
                 <figure key={d.id}>
-                  <div className="rpt-cover">{covers[coverPath(d)] ? <img src={covers[coverPath(d)]} alt="" /> : <Icon name="file" size={22} />}</div>
+                  <div className="rpt-cover">{covers[coverPath(d)] ? <img loading="lazy" decoding="async" src={covers[coverPath(d)]} alt="" /> : <Icon name="file" size={22} />}</div>
                   <figcaption><b>{d.title}</b><span className="muted">{[d.type, day(d.delivered_at)].filter(Boolean).join(" · ")}</span></figcaption>
                 </figure>
               ))}

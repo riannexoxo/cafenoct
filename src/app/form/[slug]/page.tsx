@@ -16,7 +16,7 @@ export default async function RequestForm({ params }: { params: Promise<{ slug: 
   const info = ok ? ((await (await createClient()).rpc("intake_info", { p_slug: slug })).data as { title: string; intro: string; owner: string | null } | null) : null;
   return (
     <div className="pt-shell">
-      <header className="pt-top"><span className="pt-brand"><img src={brand.logo} alt="" width={28} height={28} /><span>{brand.name}</span></span></header>
+      <header className="pt-top"><span className="pt-brand"><img src={brand.logo} alt="" fetchPriority="high" decoding="async" width={28} height={28} /><span>{brand.name}</span></span></header>
       <main className="pt-main pt-narrow">
         {info ? <IntakePage slug={slug} title={info.title} intro={info.intro} owner={info.owner || ""} /> : <CalmEmpty title="This form is resting" line="It may have moved or been paused. Ask for a fresh link and you'll be all set." />}
       </main>

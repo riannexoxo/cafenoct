@@ -71,7 +71,7 @@ function Queue({ kind, clients, clientId, canva = false }: { kind: Kind; clients
     return (
       <div key={x.id} className="wcardt" draggable onDragStart={(e) => e.dataTransfer.setData("text/dlv", x.id)} onClick={() => setForm(x)} role="button" tabIndex={0}
         onKeyDown={(e) => { if (e.key === "Enter") setForm(x); }} style={{ ["--c" as string]: c?.color ?? "var(--line-strong)" }}>
-        {cover && <img src={cover} alt="" className="dlv-cover" loading="lazy" draggable={false} />}
+        {cover && <img src={cover} alt="" className="dlv-cover" loading="lazy" decoding="async" draggable={false} />}
         <b>{x.title}</b>
         <div className="wt-meta">
           {!clientId && <span className="wt-client"><i />{c ? clientLabel(c) : "Personal"}</span>}

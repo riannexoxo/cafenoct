@@ -31,3 +31,5 @@ a.inbox-title:hover { color: var(--accent-ink); }
 .ib { display: inline-grid; place-items: center; }
 .ib[aria-pressed="true"] svg { fill: currentColor; }
 .inbox-mark svg { display: block; }
+
+@media (pointer: coarse) { .ib { width: 44px; height: 44px; } }

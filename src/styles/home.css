@@ -126,3 +126,11 @@ a.md-title:hover { color: var(--accent-ink); text-decoration: underline; text-un
 .w-add li span { display: flex; flex-direction: column; }
 .w-add li small { color: var(--muted); font-size: 12.5px; }
 .empty-add { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font: inherit; font-weight: 700; color: var(--muted); cursor: pointer; }
+
+/* Touch: keep the look, widen the hit area to 44px. */
+@media (pointer: coarse) {
+  .md-check { position: relative; }
+  .md-check::before { content: ""; position: absolute; inset: -11px; }
+  .w-tools { gap: 8px; }
+  .w-tools button { width: 44px; height: 44px; }
+}

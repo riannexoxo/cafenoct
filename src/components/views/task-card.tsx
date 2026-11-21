@@ -30,7 +30,7 @@ export default function TaskCard({ x, client: c, project: p, comments, showClien
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } else onKey?.(e); }}
       style={{ ["--c" as string]: c?.color ?? "var(--line-strong)" }}>
       {/* eslint-disable-next-line @next/next/no-img-element -- any image link the user saved, not a Next asset */}
-      {cover && <img className="vcover" src={cover} alt="" loading="lazy" referrerPolicy="no-referrer" draggable={false} />}
+      {cover && <img className="vcover" src={cover} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" draggable={false} />}
       <b>{x.milestone && <span className="vdia" role="img" aria-label="Milestone" />}{x.title}</b>
       {(showClient || p) && (
         <div className="wt-meta">

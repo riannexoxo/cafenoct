@@ -19,7 +19,7 @@ export default async function ApprovePage({ params }: { params: Promise<{ token:
   const data = TOKEN.test(token) ? ((await (await createClient()).rpc("share_view", { p_token: token })).data as ShareData | null) : null;
   const shell = (body: React.ReactNode) => (
     <div className="pt-shell">
-      <header className="pt-top"><span className="pt-brand"><img src={brand.logo} alt="" width={28} height={28} /><span>{brand.name}</span></span></header>
+      <header className="pt-top"><span className="pt-brand"><img src={brand.logo} alt="" fetchPriority="high" decoding="async" width={28} height={28} /><span>{brand.name}</span></span></header>
       <main className="pt-main pt-narrow">{body}</main>
     </div>
   );

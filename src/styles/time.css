@@ -21,3 +21,7 @@ a.time-name:hover { color: var(--accent-ink); }
 
 .week-report h3 .btn { min-height: 36px; }
 .week-report-cols { gap: 18px; }
+
+@media (pointer: coarse) {
+  .time-selects .search, .btn.small.timer-btn, .time-more, .week-report h3 .btn { min-height: 44px; }
+}

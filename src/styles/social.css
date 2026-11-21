@@ -52,8 +52,8 @@
 .ig-face:hover img, .ig-face:hover video { transform: scale(1.03); }
 .ig-face:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
 .ig-blank { position: absolute; inset: 0; display: grid; place-items: center; padding: 10px; text-align: center; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; background: color-mix(in srgb, var(--lavender) 60%, var(--card)); }
-.ig-badge { position: absolute; top: 6px; right: 6px; font: 500 10.5px var(--font); color: #fff; background: rgba(0,0,0,.5); padding: 2px 7px; border-radius: 99px; backdrop-filter: blur(4px); }
-.ig-date { position: absolute; left: 6px; bottom: 6px; font: 500 10.5px var(--mono); color: #fff; background: rgba(0,0,0,.45); padding: 2px 7px; border-radius: 99px; backdrop-filter: blur(4px); }
+.ig-badge { position: absolute; top: 6px; right: 6px; font: 500 10.5px var(--font); color: var(--white); background: rgba(0,0,0,.5); padding: 2px 7px; border-radius: 99px; backdrop-filter: blur(4px); }
+.ig-date { position: absolute; left: 6px; bottom: 6px; font: 500 10.5px var(--mono); color: var(--white); background: rgba(0,0,0,.45); padding: 2px 7px; border-radius: 99px; backdrop-filter: blur(4px); }
 .ig-pill { position: absolute; top: 6px; left: 6px; font: 600 10px var(--font); letter-spacing: .02em; padding: 3px 8px; border-radius: 99px; background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
 .ig-pill.draft { background: color-mix(in srgb, var(--warn) 30%, var(--card)); }
 .ig-pill.approval { background: color-mix(in srgb, var(--lilac) 40%, var(--card)); }
@@ -136,4 +136,10 @@
 @media (prefers-reduced-motion: reduce) {
   .pcard, .wk-col, .ig-face img, .ig-face video, .ig-tile.lifting .ig-face, .ig-tray-item.lifting .ig-face { transition: none; }
   .ig-face:hover img, .ig-face:hover video { transform: none; }
+}
+
+@media (pointer: coarse) {
+  .wk-h .btn { min-width: 44px; min-height: 44px; }
+  .social-empty .btn, .ig-tray-item .btn, .q-acts .btn, .pub-fail .btn, .share-link .btn, .q-date, .ig-toggle { min-height: 44px; }
+  .ig-toggle input { width: 24px; height: 24px; }
 }

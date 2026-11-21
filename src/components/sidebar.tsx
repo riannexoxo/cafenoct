@@ -98,7 +98,7 @@ export default function Sidebar({ clients, name, owner = false }: { clients: Cli
             <ClientAvatar c={current} className="acct-av" />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={brand.logo} alt="" className="brand-logo" />
+            <img src={brand.logo} alt="" fetchPriority="high" decoding="async" className="brand-logo" />
           )}
           <span className="brand-txt">
             <b>{current ? clientLabel(current) : brand.name}</b>
@@ -111,7 +111,7 @@ export default function Sidebar({ clients, name, owner = false }: { clients: Cli
             <div className="acct-h">Your account</div>
             <Link href="/" className={`acct-i ${!current ? "on" : ""}`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={brand.logo} alt="" className="acct-av" />
+              <img loading="lazy" decoding="async" src={brand.logo} alt="" className="acct-av" />
               <span><b>Admin</b><small>{name || "You"} · everything</small></span>
             </Link>
             <div className="acct-h">Client accounts</div>

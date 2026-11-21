@@ -17,7 +17,7 @@ export function Files({ files, urls }: { files: PDeliverable["files"]; urls: Rec
         const url = urls[f.path], kind = fileKind(f.type);
         return (
           <figure key={f.path} className={`pt-file ${kind}`}>
-            {kind === "image" ? <a href={url} target="_blank" rel="noopener noreferrer" aria-label={`Open ${f.name} full size`}><img src={url} alt={f.name} loading="lazy" /></a>
+            {kind === "image" ? <a href={url} target="_blank" rel="noopener noreferrer" aria-label={`Open ${f.name} full size`}><img src={url} alt={f.name} loading="lazy" decoding="async" /></a>
               : kind === "video" ? <video src={url} controls playsInline preload="metadata" aria-label={f.name} />
                 : <a className="pt-doc" href={url} target="_blank" rel="noopener noreferrer"><Icon name="file" size={28} /><span>Open</span></a>}
             <figcaption>{f.name}</figcaption>

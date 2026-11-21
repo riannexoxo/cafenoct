@@ -18,7 +18,7 @@ export default async function PortalLayout({ children }: { children: React.React
     <div className="pt-shell">
       <header className="pt-top">
         <Link href="/portal" className="pt-brand" aria-label={`${brand.name} portal home`}>
-          <img src={brand.logo} alt="" width={28} height={28} />
+          <img src={brand.logo} alt="" fetchPriority="high" decoding="async" width={28} height={28} />
           <span>{brand.name}</span>
         </Link>
         <form action={signOut}>

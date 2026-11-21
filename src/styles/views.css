@@ -133,3 +133,9 @@ table.vsheet { min-width: 720px; }
 .vsels .vsel { width: auto; flex: 0 1 auto; max-width: 200px; padding-right: 30px; }
 .vsels .grow { min-width: 8px; }
 @media (max-width: 720px) { .vsels .vsel { flex: 1 1 140px; max-width: none; } }
+
+@media (pointer: coarse) {
+  .vsheet-open .btn, .vtl-ms, .vupd-opt, .vtoggle { min-height: 44px; }
+  .vlabel-edit .vlab button { position: relative; }
+  .vlabel-edit .vlab button::before { content: ""; position: absolute; inset: -11px; }
+}

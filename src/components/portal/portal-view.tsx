@@ -45,7 +45,7 @@ export default function PortalView({ data, urls }: { data: PortalData; urls: Rec
     const cover = (d.files ?? []).findLast((f) => fileKind(f.type) === "image" && urls[f.path]);
     return (
       <button key={d.id} type="button" className="pt-card" onClick={() => setOpen({ kind: "deliverable", id: d.id })}>
-        <span className="pt-cover">{cover ? <img src={urls[cover.path]} alt="" loading="lazy" /> : <Icon name="file" size={28} />}</span>
+        <span className="pt-cover">{cover ? <img src={urls[cover.path]} alt="" loading="lazy" decoding="async" /> : <Icon name="file" size={28} />}</span>
         <span className="pt-card-body">
           <b>{d.title}</b>
           <span className="small muted">{[d.type, d.due_date && d.status !== "delivered" ? `Due ${niceDate(d.due_date)}` : ""].filter(Boolean).join(" · ")}</span>
