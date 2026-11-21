@@ -23,6 +23,7 @@ const ME: [string, string, IconName][] = [
   ["/invoices", "Invoices", "file"],
 ];
 const WORKSPACE: [string, string, IconName][] = [
+  ["/pipeline", "Pipeline", "coin"],
   ["/projects", "Projects", "projects"],
   ["/work", "Work", "tasks"],
   ["/docs", "Docs", "docs"],
