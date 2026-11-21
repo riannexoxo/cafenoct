@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { friendlyAuthError, newPasswordProblem, passwordStrength } from "@/lib/auth-ui";
-import type { NoctiState } from "@/components/nocti";
+import Nocti, { type NoctiState } from "@/components/nocti";
 import Turnstile, { TURNSTILE_SITE_KEY } from "@/components/turnstile";
 import AuthShell, { PasswordField, StrengthMeter } from "./auth-shell";
 
@@ -91,7 +91,8 @@ export default function LoginForm({ invite = "", notice = "" }: { invite?: strin
         {up && <StrengthMeter id="pw-meter" {...strength} />}
         <Turnstile onToken={setCaptcha} resetKey={resetCaptcha} />
         <p className="auth-msg" role="status" aria-live="polite">{message}</p>
-        <button type="submit" className="btn solid auth-go" disabled={busy}>{busy ? "One moment…" : up ? "Create my account" : "Sign in"}</button>
+        <button type="submit" className="btn solid auth-go" disabled={busy}>
+          <span className="auth-go-nocti" aria-hidden="true"><Nocti mood="sleepy" state={nocti} size={34} /></span>{busy ? "One moment…" : up ? "Create my account" : "Sign in"}</button>
       </form>
     </AuthShell>
   );

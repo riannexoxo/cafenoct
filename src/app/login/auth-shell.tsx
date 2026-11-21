@@ -1,10 +1,11 @@
 "use client";
 
-// The cozy frame around every sign-in page: Nocti on one side, the form on the other (stacked on phones).
+// The cozy frame around every sign-in page: the showcase on one side, the form on the other (form only on phones).
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import Nocti, { type NoctiState } from "@/components/nocti";
 import { brand } from "@/brand";
+import AuthShowcase from "./auth-showcase";
 import "@/styles/auth.css";
 
 export default function AuthShell({ state = "idle", title, lede, children, foot }: {
@@ -21,12 +22,7 @@ export default function AuthShell({ state = "idle", title, lede, children, foot 
   }, []);
   return (
     <main className="auth">
-      <section className="auth-art" aria-hidden="true">
-        <span className="auth-moon" />
-        <span className="auth-star s1">✦</span><span className="auth-star s2">✦</span><span className="auth-star s3">♡</span>
-        <div className="auth-nocti"><Nocti mood="sleepy" state={state} size={240} follow /></div>
-        <p className="auth-art-line">{brand.tagline}</p>
-      </section>
+      <AuthShowcase state={state} />
       <section className="auth-panel">
         <div className="auth-card2" ref={card}>
           <div className="auth-brand">
