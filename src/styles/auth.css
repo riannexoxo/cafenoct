@@ -1,4 +1,5 @@
 /* Sign-in, sign-up and password pages. */
+main.auth { padding: 0; }
 .auth { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); background: var(--bg); }
 .auth-art { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
   background: radial-gradient(120% 90% at 30% 20%, color-mix(in srgb, var(--lavender) 85%, transparent), transparent 60%),
