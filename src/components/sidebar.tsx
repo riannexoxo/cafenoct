@@ -13,6 +13,7 @@ import { openFeedback } from "./feedback";
 import { portalTabs, rolePages } from "@/lib/roles";
 import { openPalette } from "./command-palette";
 import { openTour } from "./tour";
+import { useUnread } from "./inbox";
 
 const ME: [string, string, IconName][] = [
   ["/calendar", "My calendar", "schedule"],
@@ -35,6 +36,7 @@ export default function Sidebar({ clients, name, owner = false }: { clients: Cli
   const box = useRef<HTMLDivElement>(null);
   const portalId = path.match(/^\/clients\/([0-9a-f-]{36})/)?.[1];
   const current = clients.find((c) => c.id === portalId);
+  const unread = useUnread();
 
   useEffect(() => {
     const close = (e: MouseEvent) => { if (!box.current?.contains(e.target as Node)) setOpen(false); };
@@ -100,6 +102,9 @@ export default function Sidebar({ clients, name, owner = false }: { clients: Cli
         ) : (
           <>
             {item("/", "Today", "today", path === "/")}
+            <Link href="/inbox" className={path === "/inbox" ? "on" : ""} aria-label={unread ? `Inbox, ${unread} unread` : "Inbox"}>
+              <Icon name="bell" /><span>Inbox</span>{unread > 0 && <span className="badge-dot">{unread > 99 ? "99+" : unread}</span>}
+            </Link>
             <div className="nav-h">Me</div>
             {ME.map(([href, label, icon]) => item(href, label, icon, path.startsWith(href)))}
             <div className="nav-h">Client portals</div>
