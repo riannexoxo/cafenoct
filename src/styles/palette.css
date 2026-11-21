@@ -1,0 +1,26 @@
+/* Cmd+K palette */
+.cmdk-scrim { position: fixed; inset: 0; z-index: 80; display: grid; justify-items: center; align-items: start;
+  padding: max(10vh, env(safe-area-inset-top, 0px)) 16px 16px; background: color-mix(in srgb, var(--ink) 28%, transparent);
+  backdrop-filter: blur(3px); animation: cmdk-fade .18s var(--ml-ease); }
+.cmdk { width: min(640px, 100%); max-height: min(70vh, 560px); display: flex; flex-direction: column; overflow: hidden;
+  background: var(--card); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); animation: cmdk-in .22s var(--ml-ease); }
+.cmdk-bar { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); color: var(--muted); }
+.cmdk-bar input { flex: 1; min-width: 0; border: 0; background: none; font-size: 17px; color: var(--ink); outline: none; }
+.cmdk kbd { font: 600 11px/1 var(--mono); padding: 4px 6px; border-radius: 6px; background: var(--tint); color: var(--muted); }
+.cmdk-list { list-style: none; margin: 0; padding: 6px; overflow-y: auto; overscroll-behavior: contain; }
+.cmdk-h { padding: 10px 10px 4px; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.cmdk-i { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 8px 10px; border-radius: 12px; cursor: pointer; color: var(--ink); }
+.cmdk-i.on { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent-ink); }
+.cmdk-l { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.cmdk-hint { font-size: 12px; color: var(--muted); text-transform: capitalize; }
+.cmdk-empty { display: flex; align-items: center; gap: 12px; padding: 18px 12px; color: var(--muted); }
+.cmdk-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 16px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+.cmdk-foot kbd { margin-right: 2px; }
+.cmdk-foot .linkish { background: none; border: 0; color: var(--accent-ink); font-weight: 700; cursor: pointer; }
+.cmdk-open { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 38px; padding: 8px 12px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--card); color: var(--muted); font-size: 13px; cursor: pointer; }
+.cmdk-open:hover { color: var(--ink); border-color: var(--line-strong); }
+.cmdk-open kbd { margin-left: auto; font: 600 11px/1 var(--mono); padding: 3px 6px; border-radius: 6px; background: var(--tint); }
+@keyframes cmdk-in { from { opacity: 0; transform: translateY(-8px) scale(.98); } }
+@keyframes cmdk-fade { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .cmdk, .cmdk-scrim { animation: none; } }

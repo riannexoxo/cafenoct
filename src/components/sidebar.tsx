@@ -11,6 +11,7 @@ import Icon, { type IconName } from "./icon";
 import ClientAvatar from "./client-avatar";
 import { openFeedback } from "./feedback";
 import { portalTabs, rolePages } from "@/lib/roles";
+import { openPalette } from "./command-palette";
 
 const ME: [string, string, IconName][] = [
   ["/calendar", "My calendar", "schedule"],
@@ -82,6 +83,10 @@ export default function Sidebar({ clients, name, owner = false }: { clients: Cli
           </div>
         )}
       </div>
+
+      <button type="button" className="cmdk-open" onClick={openPalette} aria-keyshortcuts="Meta+K Control+K">
+        <Icon name="more" size={16} /><span>Search or jump…</span><kbd>⌘K</kbd>
+      </button>
 
       <nav className="nav" aria-label="Main">
         {current ? (
