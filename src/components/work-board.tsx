@@ -12,6 +12,7 @@ import { ATTACH, firstImage } from "./task-files";
 import { useSigned } from "@/lib/work-files";
 import Seg from "./seg";
 import Icon from "./icon";
+import ReviewCard from "./review-card";
 import { Empty, VTASK_COLS, isImage, type CardCtx, type GroupBy, type Lane, type VTask, type ViewConfig, type ViewKind } from "./views/shared";
 import BoardView from "./views/board-view";
 import TableView from "./views/table-view";
@@ -220,6 +221,7 @@ function Board({ clients, clientId, projectId, taskId, q: q0, openNew }: Props) 
         <SavedViews current={config} apply={apply} />
       </div>
 
+      {proj && project(proj)?.status === "Done" && <ReviewCard key={proj} project={project(proj)!} client={client(project(proj)!.client_id)} />}
       {body()}
 
       {form && <TaskForm key={form.id ?? "new"} task={form} clients={clients} projects={plist} labelSuggestions={allLabels} onClose={() => setForm(null)} onSaved={reload} />}

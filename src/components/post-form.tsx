@@ -12,6 +12,7 @@ import MediaThumb from "./media-thumb";
 import ShareLinkButton from "./share-link-button";
 import TemplatePicker, { list, str } from "./template-picker";
 import RemindButton from "./remind-button";
+import { ReactionCounts } from "./reactions";
 import { publishCheck, publishNow, useAccounts } from "@/lib/publish";
 import "@/styles/social.css";
 
@@ -233,6 +234,7 @@ export default function PostForm({ post = {}, clients, pillars, onClose, onSaved
             </div>
           )}
           <div className="field full pf-ship"><label>Client approval</label>
+            {id && <ReactionCounts entityId={id} />}
             {id ? <ShareLinkButton entity="post" entityId={id} clientId={clientId || null} /> : <small className="muted">Save the post first to get an approval link for your client.</small>}
             {status !== "Posted" && !chk.ok && <small className="muted">Publish now: {chk.why}</small>}
           </div>

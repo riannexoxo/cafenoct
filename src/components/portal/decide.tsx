@@ -78,5 +78,5 @@ export default function DecisionBox({ canDecide, askName = false, onSend, id }: 
 }
 
 // Database messages written for people (see portal_decide / share_decide); anything else stays generic.
-const SAFE = ["Add a comment first", "That comment is too long", "That is too long", "Too many comments in a short time. Please try again later.", "This link has expired", "This link is not valid"];
+const SAFE = ["Add a comment first", "That comment is too long", "That is too long", "Too many comments in a short time. Please try again later.", "Too many updates in a short time. Please try again later.", "This link has expired", "This link is not valid"];
 export const friendly = (msg?: string) => SAFE.find((s) => msg?.includes(s)) ?? (msg?.includes("No access") ? "This isn't open to you anymore." : "Something went wrong. Try again.");

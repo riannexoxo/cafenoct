@@ -14,6 +14,13 @@ import { portalTabs, rolePages } from "@/lib/roles";
 import { openPalette } from "./command-palette";
 import { openTour } from "./tour";
 import { useUnread } from "./inbox";
+import { useTimers } from "./timers";
+import Nocti from "./nocti";
+import { CELEBRATE } from "@/lib/celebrate";
+import "@/styles/nav.css";
+
+// Each section gets its own chip color: Me rose, client portals lavender, workspace honey, the rest mint.
+type Tone = "rose" | "lav" | "honey" | "mint";
 
 const ME: [string, string, IconName][] = [
   ["/calendar", "My calendar", "schedule"],
@@ -24,6 +31,7 @@ const ME: [string, string, IconName][] = [
 ];
 const WORKSPACE: [string, string, IconName][] = [
   ["/pipeline", "Pipeline", "coin"],
+  ["/workload", "Workload", "time"],
   ["/projects", "Projects", "projects"],
   ["/work", "Work", "tasks"],
   ["/docs", "Docs", "docs"],
@@ -38,6 +46,36 @@ export default function Sidebar({ clients, name, owner = false }: { clients: Cli
   const portalId = path.match(/^\/clients\/([0-9a-f-]{36})/)?.[1];
   const current = clients.find((c) => c.id === portalId);
   const unread = useUnread();
+  const [timers] = useTimers();
+  const live = new Set((timers ?? []).map((t) => t.client_id));
+  const running = (timers ?? []).length;
+  const [happy, setHappy] = useState(false);
+  const nav = useRef<HTMLElement>(null);
+  const pill = useRef<HTMLSpanElement>(null);
+
+  // Nocti hops for a moment whenever something good happens (celebrate() in lib/celebrate.ts).
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout>;
+    const on = () => { setHappy(true); clearTimeout(t); t = setTimeout(() => setHappy(false), 1500); };
+    window.addEventListener(CELEBRATE, on);
+    return () => { window.removeEventListener(CELEBRATE, on); clearTimeout(t); };
+  }, []);
+
+  // The berry pill sits under the active link and glides to the next one (CSS transition; none for reduced motion).
+  useEffect(() => {
+    const n = nav.current, p = pill.current;
+    if (!n || !p) return;
+    const place = () => {
+      const a = n.querySelector<HTMLElement>("a.on");
+      p.style.opacity = a ? "1" : "0";
+      if (a) { p.style.height = `${a.offsetHeight}px`; p.style.transform = `translateY(${a.offsetTop}px)`; }
+    };
+    place();
+    const r = requestAnimationFrame(() => p.classList.add("ready")); // first placement lands without gliding
+    const ro = new ResizeObserver(place);
+    ro.observe(n);
+    return () => { cancelAnimationFrame(r); ro.disconnect(); };
+  }, [path, portalId]);
 
   useEffect(() => {
     const close = (e: MouseEvent) => { if (!box.current?.contains(e.target as Node)) setOpen(false); };
@@ -45,9 +83,9 @@ export default function Sidebar({ clients, name, owner = false }: { clients: Cli
     return () => document.removeEventListener("click", close);
   }, []);
 
-  const item = (href: string, label: string, icon: IconName, on: boolean) => (
-    <Link key={href + label} href={href} className={on ? "on" : ""}>
-      <Icon name={icon} />
+  const item = (href: string, label: string, icon: IconName, on: boolean, tone: Tone) => (
+    <Link key={href + label} href={href} className={on ? "on" : ""} aria-current={on ? "page" : undefined} data-tone={tone}>
+      <span className="nav-chip"><Icon name={icon} /></span>
       <span>{label}</span>
     </Link>
   );
@@ -92,41 +130,47 @@ export default function Sidebar({ clients, name, owner = false }: { clients: Cli
         <Icon name="more" size={16} /><span>Search or jump…</span><kbd>⌘K</kbd>
       </button>
 
-      <nav className="nav" aria-label="Main">
+      <nav className="nav" aria-label="Main" ref={nav}>
+        <span className="nav-glide" ref={pill} aria-hidden="true" />
         {current ? (
           <>
             <div className="nav-h">{clientLabel(current)}</div>
-            {portalTabs(current).map(([sub, label, icon]) => item(`/clients/${current.id}${sub}`, label, icon, path === `/clients/${current.id}${sub}`))}
+            {portalTabs(current).map(([sub, label, icon]) => item(`/clients/${current.id}${sub}`, label, icon, path === `/clients/${current.id}${sub}`, "lav"))}
             <div className="nav-h" />
-            {item("/", "Back to Admin", "left", false)}
+            {item("/", "Back to Admin", "left", false, "mint")}
           </>
         ) : (
           <>
-            {item("/", "Today", "today", path === "/")}
-            <Link href="/inbox" className={path === "/inbox" ? "on" : ""} aria-label={unread ? `Inbox, ${unread} unread` : "Inbox"}>
-              <Icon name="bell" /><span>Inbox</span>{unread > 0 && <span className="badge-dot">{unread > 99 ? "99+" : unread}</span>}
+            {item("/", "Today", "today", path === "/", "rose")}
+            <Link href="/inbox" className={path === "/inbox" ? "on" : ""} aria-current={path === "/inbox" ? "page" : undefined} data-tone="rose" aria-label={unread ? `Inbox, ${unread} unread` : "Inbox"}>
+              <span className="nav-chip"><Icon name="bell" /></span><span>Inbox</span>{unread > 0 && <span className="badge-dot">{unread > 99 ? "99+" : unread}</span>}
             </Link>
             <div className="nav-h">Me</div>
-            {ME.map(([href, label, icon]) => item(href, label, icon, path.startsWith(href)))}
+            {ME.map(([href, label, icon]) => item(href, label, icon, path.startsWith(href), "rose"))}
             <div className="nav-h">Client portals</div>
             {clients.filter((c) => c.status === "Active").map((c) => (
-              <Link key={c.id} href={`/clients/${c.id}`}>
-                <ClientAvatar c={c} className="nav-dot" />
+              <Link key={c.id} href={`/clients/${c.id}`} data-tone="lav">
+                <span className="nav-av"><ClientAvatar c={c} className="nav-dot" />{live.has(c.id) && <i className="nav-live" aria-hidden="true" />}</span>
                 <span className="ellipsis">{clientLabel(c)}</span>
+                {live.has(c.id) && <span className="sr-only">, timer running</span>}
               </Link>
             ))}
-            {item("/clients", "All clients", "clients", path === "/clients")}
+            {item("/clients", "All clients", "clients", path === "/clients", "lav")}
             <div className="nav-h">Workspace</div>
-            {[...WORKSPACE, ...rolePages(clients)].map(([href, label, icon]) => item(href, label, icon, path.startsWith(href)))}
+            {[...WORKSPACE, ...rolePages(clients)].map(([href, label, icon]) => item(href, label, icon, path.startsWith(href), "honey"))}
             <div className="nav-h" />
-            {item("/automations", "Automations", "auto", path === "/automations")}
-            {owner && item("/owner", "Friends beta", "clients", path === "/owner")}
-            {item("/settings", "Settings", "settings", path === "/settings")}
+            {item("/automations", "Automations", "auto", path === "/automations", "mint")}
+            {owner && item("/owner", "Friends beta", "clients", path === "/owner", "mint")}
+            {item("/settings", "Settings", "settings", path === "/settings", "mint")}
           </>
         )}
       </nav>
 
       <div className="rail-foot">
+        <div className="rail-nocti">
+          <Nocti size={44} state={happy ? "happy" : running > 0 ? "watch" : "idle"} label="Nocti" />
+          <span>{happy ? "Yay, nice work!" : running > 0 ? `Watching ${running === 1 ? "your timer" : `${running} timers`}` : "All quiet"}</span>
+        </div>
         <button className="btn small ghost" type="button" onClick={openTour}><Icon name="spark" />Take the tour</button>
         <button className="btn small ghost" type="button" onClick={openFeedback}><Icon name="chat" />Send feedback</button>
         <form action={signOut}>

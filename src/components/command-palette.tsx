@@ -14,7 +14,7 @@ type Item = { id: string; group: string; label: string; hint?: string; href: str
 
 const PAGES: [string, string, IconName][] = [
   ["/", "Today", "today"], ["/inbox", "Inbox", "bell"], ["/work", "Work", "tasks"], ["/projects", "Projects", "projects"],
-  ["/calendar", "My calendar", "schedule"], ["/time", "Time", "time"], ["/focus", "Focus", "focus"], ["/invoices", "Invoices", "file"],
+  ["/calendar", "My calendar", "schedule"], ["/time", "Time", "time"], ["/workload", "Workload", "schedule"], ["/focus", "Focus", "focus"], ["/invoices", "Invoices", "file"],
   ["/wallet", "Wallet", "money"], ["/content", "Content calendar", "content"], ["/analytics", "Analytics", "time"],
   ["/clients", "All clients", "clients"], ["/pipeline", "Pipeline", "projects"], ["/docs", "Docs", "docs"], ["/toolkit", "Toolkit", "spark"],
   ["/automations", "Automations", "auto"], ["/settings", "Settings", "settings"], ["/account/password", "Change password", "settings"],
@@ -27,7 +27,7 @@ const RECENTS = "cn-recents";
 export const openPalette = () => window.dispatchEvent(new Event("cn:palette"));
 
 // Strips characters that have meaning in PostgREST filters, so a search can never change the query.
-const clean = (q: string) => q.replace(/[%_,()\\*:"'.]/g, " ").replace(/\s+/g, " ").trim().slice(0, 60);
+export const clean = (q: string) => q.replace(/[%_,()\\*:"'.]/g, " ").replace(/\s+/g, " ").trim().slice(0, 60);
 
 function readRecents(): Item[] {
   try { return JSON.parse(localStorage.getItem(RECENTS) ?? "[]").slice(0, 6); } catch { return []; }

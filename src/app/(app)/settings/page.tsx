@@ -15,7 +15,7 @@ export const metadata = { title: "Settings" };
 export default async function Settings() {
   const supabase = await createClient();
   // Only whether each connection is on is sent to the page, never the private address or key.
-  const { data } = await supabase.from("profiles").select("gcal_url,inbox_key_hash,name,business,currency,invoice_email,settings").maybeSingle<{ gcal_url: string; inbox_key_hash: string; name: string; business: string; currency: string; invoice_email: string; settings: { tz?: string; theme?: string } | null }>();
+  const { data } = await supabase.from("profiles").select("gcal_url,inbox_key_hash,name,business,currency,invoice_email,settings").maybeSingle<{ gcal_url: string; inbox_key_hash: string; name: string; business: string; currency: string; invoice_email: string; settings: { tz?: string; theme?: string; review_url?: string } | null }>();
   return (
     <>
       <div className="head">
@@ -24,7 +24,7 @@ export default async function Settings() {
           <p>Your details, theme, payment emails, calendar, booking pages, request forms and Canva.</p>
         </div>
       </div>
-      <ProfileForm initial={{ name: data?.name ?? "", business: data?.business ?? "", currency: data?.currency || "USD", invoice_email: data?.invoice_email ?? "", tz: data?.settings?.tz ?? "" }} />
+      <ProfileForm initial={{ name: data?.name ?? "", business: data?.business ?? "", currency: data?.currency || "USD", invoice_email: data?.invoice_email ?? "", tz: data?.settings?.tz ?? "", review_url: data?.settings?.review_url ?? "" }} />
       <ThemePicker saved={data?.settings?.theme ?? ""} />
       <PaymentEmails connected={!!data?.inbox_key_hash} />
       <CalendarConnect connected={!!data?.gcal_url} />

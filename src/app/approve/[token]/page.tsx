@@ -7,6 +7,7 @@ import { TOKEN, niceDate, type ShareData } from "@/lib/portal";
 import { brand } from "@/brand";
 import CalmEmpty from "@/components/portal/calm-empty";
 import ApproveForm from "@/components/portal/approve-form";
+import { ShareReactions } from "@/components/reactions";
 import { DeliverablePreview, PostPreview, Thread } from "@/components/portal/previews";
 import Icon from "@/components/icon";
 
@@ -43,6 +44,7 @@ export default async function ApprovePage({ params }: { params: Promise<{ token:
       )}
       <section className="card pt-sheet">
         {isPost ? <PostPreview p={item} /> : <DeliverablePreview d={item} urls={urls} />}
+        <ShareReactions token={token} />
       </section>
       {data.comments.length > 0 && <section className="pt-sheet-thread"><h3>Comments</h3><Thread comments={data.comments} owner={owner} /></section>}
       <section className="card pt-sheet">

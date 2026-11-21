@@ -6,10 +6,12 @@ import { usePathname } from "next/navigation";
 import { complete, noteLeave, read, secondsLeft, subscribe, type FocusState } from "@/lib/focus";
 import { pad } from "@/lib/dates";
 import { toast } from "@/lib/toast";
+import IdleCheck from "./idle-check";
 
 const server = () => null;
 
-// Runs on every page: finishes focus sessions on time, counts leaving the tab, and shows a small timer pill.
+// Runs on every page: finishes focus sessions on time, counts leaving the tab, shows a small timer pill,
+// and mounts the "Still working?" check for running timers.
 export default function FocusRunner() {
   const s = useSyncExternalStore(subscribe, read, server) as FocusState | null;
   const path = usePathname();
@@ -29,13 +31,16 @@ export default function FocusRunner() {
     return () => { clearInterval(i); document.removeEventListener("visibilitychange", vis); };
   }, []);
 
-  if (!s?.running || path === "/focus") return null;
+  if (!s?.running || path === "/focus") return <IdleCheck />;
   const left = secondsLeft(s);
   return (
+    <>
+    <IdleCheck />
     <Link href="/focus" className="focus-pill" aria-label="Focus timer running. Open Focus.">
       <span className="dot-live" />
       <span className="num">{pad(Math.floor(left / 60))}:{pad(left % 60)}</span>
       <span>{s.phase === "focus" ? s.note || "Focus" : "Break"}</span>
     </Link>
+    </>
   );
 }

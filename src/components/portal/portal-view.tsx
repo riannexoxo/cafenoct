@@ -16,6 +16,7 @@ import Icon from "@/components/icon";
 import Nocti from "@/components/nocti";
 import MediaThumb from "@/components/media-thumb";
 import DecisionBox, { friendly, type Decision } from "./decide";
+import { PortalReactions } from "@/components/reactions";
 import { DeliverablePreview, InvoiceView, Platforms, PostPreview, Thread } from "./previews";
 
 type Tab = "overview" | "work" | "posts" | "invoices";
@@ -186,6 +187,7 @@ export default function PortalView({ data, urls }: { data: PortalData; urls: Rec
             <h2>{openD.title}</h2>
             <span className={`pill ${DLV_TONE[openD.status] ?? ""}`}>{DLV_WORDS[openD.status] ?? openD.status}</span>
             <DeliverablePreview d={openD} urls={urls} />
+            <PortalReactions entity="deliverable" id={openD.id} />
             <Thread comments={thread(openD.id)} owner={owner} />
             <DecisionBox id={`d-${openD.id}`} canDecide={needsDeliverable(openD)} onSend={send("deliverable", openD.id)} />
             <button type="button" className="btn ghost" onClick={() => setOpen(null)}>Close</button>
@@ -198,6 +200,7 @@ export default function PortalView({ data, urls }: { data: PortalData; urls: Rec
             <h2>{openP.title || "Post"}</h2>
             <span className={`pill ${POST_TONE[openP.status] ?? ""}`}>{POST_WORDS[openP.status] ?? openP.status}</span>
             <PostPreview p={openP} />
+            <PortalReactions entity="post" id={openP.id} />
             <Thread comments={thread(openP.id)} owner={owner} />
             <DecisionBox id={`p-${openP.id}`} canDecide={needsPost(openP)} onSend={send("post", openP.id)} />
             <button type="button" className="btn ghost" onClick={() => setOpen(null)}>Close</button>

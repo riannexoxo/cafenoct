@@ -9,6 +9,9 @@ import Feedback from "@/components/feedback";
 import { ThemeSync } from "@/components/theme-picker";
 import CommandPalette from "@/components/command-palette";
 import Tour from "@/components/tour";
+import PagePose from "@/components/page-pose";
+import Backdrop from "@/components/backdrop";
+import Help from "@/components/help";
 import { getClients, getProfile } from "@/lib/data";
 import { ownerId } from "@/lib/owner";
 
@@ -33,6 +36,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!profile) await supabase.from("profiles").insert({ user_id: claims.sub, invoice_email: (claims.email as string) ?? "" });
   return (
     <div className="shell">
+      <Backdrop />
       <Sidebar owner={!!owner} clients={clients ?? []} name={profile?.name || (claims.email as string | undefined)?.split("@")[0] || ""} />
       <main>
         <div className="wrap">{children}</div>
@@ -43,7 +47,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <DesktopBridge />
       <Feedback />
       <CommandPalette />
+      <PagePose />
       <Tour hidden={!!(profile?.settings?.tour as { hidden?: boolean } | undefined)?.hidden} seen={profile?.settings?.tour !== undefined} />
+      <Help />
       <ThemeSync saved={(profile?.settings?.theme as string | undefined) ?? ""} />
     </div>
   );

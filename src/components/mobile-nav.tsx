@@ -12,6 +12,7 @@ import { portalTabs, rolePages } from "@/lib/roles";
 import { openPalette } from "./command-palette";
 import { openTour } from "./tour";
 import { useUnread } from "./inbox";
+import "@/styles/nav.css";
 
 const TABS: [string, string, IconName][] = [
   ["/", "Today", "today"],

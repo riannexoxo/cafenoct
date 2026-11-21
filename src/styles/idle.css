@@ -1,0 +1,12 @@
+/* "Still working?" panel for a timer left running while you were away. */
+.idle-panel {
+  position: fixed; left: 16px; right: 16px; bottom: calc(150px + env(safe-area-inset-bottom, 0px)); z-index: 960;
+  display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; max-width: 380px; margin-left: auto;
+  background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow);
+  animation: idle-in 320ms var(--ml-ease) both;
+}
+.idle-panel b { font-size: 15px; }
+.idle-panel p { margin: 2px 0 10px; }
+@keyframes idle-in { from { opacity: 0; transform: translateY(12px); } }
+@media (min-width: 900px) { .idle-panel { bottom: 80px; left: auto; right: 24px; } }
+@media (prefers-reduced-motion: reduce) { .idle-panel { animation: none; } }

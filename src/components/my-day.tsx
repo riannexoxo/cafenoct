@@ -11,6 +11,7 @@ import { INVOICE_COLS, total, type Invoice } from "@/lib/invoices";
 import { addDays, parseYmd, rel, today } from "@/lib/dates";
 import { money } from "@/lib/format";
 import { toast } from "@/lib/toast";
+import { celebrate } from "@/lib/celebrate";
 import { clientLabel, type Client } from "@/lib/types";
 import { parse } from "./todo-list";
 import TimerButton from "./timer-button";
@@ -90,6 +91,7 @@ export default function MyDay({ clients }: { clients: Client[] }) {
     setTasks((r) => (r ?? []).map((y) => (y.id === x.id ? { ...y, status, done_at: status === "done" ? new Date().toISOString() : null } : y)));
     const { error, next: again } = await setStatus(x, status, clients.find((c) => c.id === x.client_id));
     if (error) { toast("Could not save. Check your connection."); return; }
+    if (status === "done") celebrate();
     if (again) { reload(); toast(`Done. It comes back ${rel(again).toLowerCase()}.`); }
   }
 

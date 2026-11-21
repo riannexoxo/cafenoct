@@ -1,0 +1,71 @@
+/* Sidebar + phone tab bar: a warm paper panel with tinted icon chips and a soft berry pill on the active item.
+   Selectors start with .rail / .tabbar so they win over the older .nav rules in globals.css. */
+aside.rail {
+  background:
+    radial-gradient(120% 60% at 0% 0%, color-mix(in srgb, var(--blush) 70%, transparent), transparent 70%),
+    color-mix(in srgb, var(--paper) 92%, var(--butter));
+  box-shadow: inset -1px 0 0 var(--line), 6px 0 28px -22px rgba(59, 38, 34, .35);
+  border-right: 0;
+}
+
+.rail .nav :is(button, a) { padding: 6px 10px; gap: 10px; z-index: 1; }
+.rail .nav :is(button, a).on { background: none; color: var(--accent-ink); }
+.rail .nav :is(button, a):hover { background: color-mix(in srgb, var(--card) 70%, transparent); }
+.rail .nav :is(button, a).on:hover { background: none; }
+
+/* Tinted chips, one color per section */
+.rail .nav [data-tone] { --chip: var(--blush); --chip-ink: var(--rose-ink); }
+.rail .nav [data-tone="lav"] { --chip: var(--lavender); --chip-ink: var(--lilac-ink); }
+.rail .nav [data-tone="honey"] { --chip: var(--butter); --chip-ink: var(--butter-ink); }
+.rail .nav [data-tone="mint"] { --chip: var(--mint); --chip-ink: var(--mint-ink); }
+.nav-chip {
+  width: 28px; height: 28px; flex: none; border-radius: 9px; display: grid; place-items: center;
+  background: var(--chip); color: var(--chip-ink);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chip-ink) 12%, transparent);
+  transition: transform 240ms var(--ml-ease), box-shadow 200ms var(--ml-ease);
+}
+.rail .nav .nav-chip svg { width: 16px; height: 16px; }
+.rail .nav a.on .nav-chip { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--chip-ink) 35%, transparent), 0 2px 6px -3px var(--chip-ink); }
+
+/* Client avatars match the chips, with a pulsing dot while that client's timer runs */
+.nav-av { position: relative; display: inline-grid; flex: none; }
+.rail .nav .nav-dot { width: 28px; height: 28px; border-radius: 9px; font-size: 12px; transition: transform 240ms var(--ml-ease); }
+.rail .nav img.nav-dot { object-fit: cover; }
+.nav-live { position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--paper); }
+.nav-live::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--accent); animation: nav-ping 1.8s var(--ml-ease) infinite; }
+@keyframes nav-ping { 0% { transform: scale(1); opacity: .55; } 80%, 100% { transform: scale(2.4); opacity: 0; } }
+
+/* Hover: the chip lifts a little */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .rail .nav a:hover :is(.nav-chip, .nav-dot) { transform: translateY(-2px) rotate(-4deg); }
+}
+
+/* The gliding berry pill (placed by sidebar.tsx from the active link) */
+.nav-glide {
+  position: absolute; left: 0; right: 0; top: 0; height: 40px; z-index: 0; pointer-events: none; opacity: 0;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--accent) 11%, var(--card));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent), 0 6px 16px -12px var(--accent);
+}
+.nav-glide.ready { transition: transform 480ms var(--settle), opacity 200ms var(--ml-ease); }
+
+/* Footer Nocti */
+.rail-nocti { display: flex; align-items: center; gap: 10px; padding: 6px 8px 6px 4px; border-radius: 16px; background: color-mix(in srgb, var(--card) 60%, transparent); box-shadow: inset 0 0 0 1px var(--line); }
+.rail-nocti > span:last-child { font-size: 12.5px; font-weight: 700; color: var(--muted); min-width: 0; }
+
+/* Phone tab bar: a soft berry pill behind the active icon */
+@media (max-width: 899px) {
+  .tabbar :is(button, a) { position: relative; isolation: isolate; }
+  .tabbar :is(button, a)::before {
+    content: ""; position: absolute; z-index: -1; top: 1px; left: 50%; width: 54px; height: 30px; margin-left: -27px; border-radius: 99px;
+    background: color-mix(in srgb, var(--accent) 13%, transparent); opacity: 0; transform: scale(.55);
+    transition: transform 420ms var(--pop), opacity 200ms var(--ml-ease);
+  }
+  nav.tabbar :is(button, a).on { color: var(--accent-ink); }
+  .tabbar :is(button, a).on::before { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-glide.ready, .nav-chip, .rail .nav .nav-dot, .tabbar :is(button, a)::before { transition: none; }
+  .nav-live::after { animation: none; }
+}

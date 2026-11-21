@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element -- covers are the original files; next/image would recompress them. */
 import "@/styles/portal.css";
+import "@/styles/report-cover.css";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -71,6 +72,21 @@ export default async function MonthlyReport({ params }: { params: Promise<{ id: 
       </div>
 
       <article className="rpt-doc" style={{ ["--c" as string]: c.color || "var(--accent)" }}>
+        {/* Cover: prints as its own page, so the report opens like a proper document. */}
+        <section className="rpt-front" aria-label="Report cover">
+          {from && <div className="rpt-front-from">{from}</div>}
+          <ClientAvatar c={c} size={112} />
+          <div className="eyebrow">Monthly report</div>
+          <h1>{clientLabel(c)}</h1>
+          <p className="rpt-front-month">{title}</p>
+          <dl className="rpt-front-kpis">
+            <div><dt>Hours</dt><dd className="num">{hours}</dd></div>
+            <div><dt>Tasks done</dt><dd className="num">{doneTasks.length}</dd></div>
+            {postList.length || !dlvList.length
+              ? <div><dt>Posts published</dt><dd className="num">{postList.length}</dd></div>
+              : <div><dt>Delivered</dt><dd className="num">{dlvList.length}</dd></div>}
+          </dl>
+        </section>
         <header className="rpt-head">
           <div className="row" style={{ gap: 14, flexWrap: "nowrap", minWidth: 0 }}>
             <ClientAvatar c={c} size={52} />

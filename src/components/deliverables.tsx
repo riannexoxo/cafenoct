@@ -13,6 +13,7 @@ import Icon from "./icon";
 import WorkFiles from "./work-files";
 import ShareLinkButton from "./share-link-button";
 import CommentThread from "./comment-thread";
+import { ReactionCounts } from "./reactions";
 
 const noop = () => () => {};
 const href = (u?: string) => { if (!u?.trim()) return ""; try { const x = new URL(/^https?:\/\//i.test(u) ? u.trim() : `https://${u.trim()}`); return x.href; } catch { return ""; } };
@@ -218,6 +219,7 @@ function DeliverableForm({ d, kind, clients, canva, onClose, onSaved, onMove }: 
           {d.id && d.client_id && (
             <div className="field full"><span className="small muted">Client approval</span><ShareLinkButton entity="deliverable" entityId={d.id} clientId={d.client_id} /></div>
           )}
+          {d.id && <ReactionCounts entityId={d.id} full />}
           {d.id && <CommentThread entity="deliverable" entityId={d.id} clientId={d.client_id ?? null} />}
           <div className="field"><label>Revision rounds</label>
             <div className="row" style={{ gap: 6 }}>
