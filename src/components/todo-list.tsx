@@ -17,7 +17,7 @@ const REPEATS: [Repeat, string][] = [["none", "Once"], ["daily", "Every work day
 const startOfToday = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.toISOString(); };
 
 // "@deb tomorrow ! daily" → tagged to the matching client, due tomorrow, high priority, repeats every work day.
-function parse(text: string, clients: Client[]) {
+export function parse(text: string, clients: Client[]) {
   let t = ` ${text} `, client_id: string | null = null, due_date = today(), priority = "med", repeat: Repeat | null = null;
   const at = t.match(/\s@([\w.&'-]+)/);
   if (at) {

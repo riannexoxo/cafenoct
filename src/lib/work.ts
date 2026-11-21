@@ -6,12 +6,13 @@ import type { Client } from "@/lib/types";
 
 export type Sub = { id: string; title: string; done: boolean };
 export type TLink = { id: string; url: string; label: string };
+export type TFile = { path: string; name: string; size: number; type: string };
 export type Task = {
   id: string; client_id: string | null; project_id: string | null; title: string; notes: string; status: string; priority: string;
-  labels?: string[]; milestone?: boolean;
+  labels?: string[]; milestone?: boolean; files?: TFile[];
   due_date: string | null; repeat: string; done_at: string | null; subtasks: Sub[]; links: TLink[]; position: number;
 };
-export const TASK_COLS = "id,client_id,project_id,title,notes,status,priority,due_date,repeat,done_at,subtasks,links,position,labels,milestone";
+export const TASK_COLS = "id,client_id,project_id,title,notes,status,priority,due_date,repeat,done_at,subtasks,links,position,labels,milestone,files";
 export type Project = { id: string; client_id: string | null; name: string; status: "Active" | "On hold" | "Done"; start_date: string | null; due_date: string | null; description: string };
 export const PROJECT_COLS = "id,client_id,name,status,start_date,due_date,description";
 

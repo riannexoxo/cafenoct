@@ -4,7 +4,7 @@
 .pcard { transition: transform 240ms var(--ml-ease), opacity 160ms var(--ml-ease); }
 .pcard:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .pcard.dragging { opacity: .45; }
-.pcard.failed { border-left-color: var(--plum); }
+.pcard.failed { border-color: var(--plum); background: color-mix(in srgb, var(--plum) 8%, var(--card)); }
 .pcard.failed .pc-status { color: var(--plum); }
 .ccal .pc-media { max-height: 120px; }
 .lane-cell .pc-media { max-height: 190px; }

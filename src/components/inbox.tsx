@@ -2,13 +2,14 @@
 
 // One inbox for everything that needs you: client approvals and comments, failed posts, invoice events,
 // automation results, bookings and new requests. Live, filterable, mark read, save for later.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase, useRows } from "@/lib/use-rows";
 import { toast } from "@/lib/toast";
 import { clientLabel, type Client } from "@/lib/types";
 import Seg from "./seg";
 import Nocti from "./nocti";
+import Icon, { type IconName } from "./icon";
 import "@/styles/inbox.css";
 
 export type Note = {
@@ -19,11 +20,11 @@ const COLS = "id,kind,title,body,href,entity,entity_id,client_id,read_at,saved,c
 
 const FILTERS: [string, string][] = [["all", "All"], ["unread", "Unread"], ["clients", "Clients"], ["posts", "Posts"], ["money", "Money"], ["saved", "Saved"]];
 const GROUP: Record<string, string> = { approval: "clients", changes: "clients", comment: "clients", booking: "clients", intake: "clients", post_failed: "posts", invoice: "money", automation: "all", system: "all" };
-const LOOK: Record<string, { mark: string; tone: string; label: string }> = {
-  approval: { mark: "✓", tone: "mint", label: "Approved" }, changes: { mark: "↺", tone: "blush", label: "Changes" },
-  comment: { mark: "“", tone: "lav", label: "Comment" }, post_failed: { mark: "!", tone: "plum", label: "Post failed" },
-  invoice: { mark: "$", tone: "butter", label: "Money" }, automation: { mark: "✦", tone: "cream", label: "Automation" },
-  booking: { mark: "◷", tone: "lav", label: "Booking" }, intake: { mark: "✉", tone: "mint", label: "Request" }, system: { mark: "•", tone: "cream", label: "CafeNoct" },
+const LOOK: Record<string, { mark: IconName; tone: string; label: string }> = {
+  approval: { mark: "check", tone: "mint", label: "Approved" }, changes: { mark: "repeat", tone: "blush", label: "Changes" },
+  comment: { mark: "chat", tone: "lav", label: "Comment" }, post_failed: { mark: "alert", tone: "plum", label: "Post failed" },
+  invoice: { mark: "money", tone: "butter", label: "Money" }, automation: { mark: "auto", tone: "cream", label: "Automation" },
+  booking: { mark: "schedule", tone: "lav", label: "Booking" }, intake: { mark: "file", tone: "mint", label: "Request" }, system: { mark: "bell", tone: "cream", label: "CafeNoct" },
 };
 
 function ago(iso: string) {
@@ -80,7 +81,7 @@ export default function Inbox({ clients }: { clients: Client[] }) {
             const look = LOOK[n.kind] ?? LOOK.system;
             return (
               <li key={n.id} className={`inbox-i${n.read_at ? "" : " unread"}`}>
-                <span className={`inbox-mark t-${look.tone}`} aria-hidden="true">{look.mark}</span>
+                <span className={`inbox-mark t-${look.tone}`} aria-hidden="true"><Icon name={look.mark} size={16} /></span>
                 <div className="inbox-main">
                   <div className="inbox-top">
                     <span className="inbox-kind">{look.label}{n.client_id && name(n.client_id) ? ` · ${name(n.client_id)}` : ""}</span>
@@ -92,10 +93,10 @@ export default function Inbox({ clients }: { clients: Client[] }) {
                 </div>
                 <div className="inbox-acts">
                   <button type="button" className="ib" aria-pressed={n.saved} aria-label={n.saved ? "Unsave" : "Save for later"} title={n.saved ? "Saved" : "Save for later"}
-                    onClick={() => patch(n, { saved: !n.saved })}>{n.saved ? "★" : "☆"}</button>
+                    onClick={() => patch(n, { saved: !n.saved })}><Icon name="star" size={17} /></button>
                   <button type="button" className="ib" aria-label={n.read_at ? "Mark unread" : "Mark read"} title={n.read_at ? "Mark unread" : "Mark read"}
-                    onClick={() => patch(n, { read_at: n.read_at ? null : new Date().toISOString() })}>{n.read_at ? "○" : "●"}</button>
-                  <button type="button" className="ib" aria-label="Clear" title="Clear" onClick={() => remove(n)}>×</button>
+                    onClick={() => patch(n, { read_at: n.read_at ? null : new Date().toISOString() })}><Icon name={n.read_at ? "ring" : "dot"} size={17} /></button>
+                  <button type="button" className="ib" aria-label="Clear" title="Clear" onClick={() => remove(n)}><Icon name="x" size={17} /></button>
                 </div>
               </li>
             );
@@ -107,7 +108,20 @@ export default function Inbox({ clients }: { clients: Client[] }) {
 }
 
 // Unread count for the sidebar badge, live.
+// It also turns due reminders into notifications: on mount, then every minute while the tab is visible.
+let lastDelivery = 0; // the sidebar and the phone nav both use this hook; one call a minute is enough
 export function useUnread() {
-  const [rows] = useRows<{ id: string }>("inbox-unread", (s) => s.from("notifications").select("id").is("read_at", null).limit(100), ["notifications"]);
+  const [rows, reload] = useRows<{ id: string }>("inbox-unread", (s) => s.from("notifications").select("id").is("read_at", null).limit(100), ["notifications"]);
+  useEffect(() => {
+    const deliver = () => {
+      if (document.visibilityState !== "visible" || Date.now() - lastDelivery < 50_000) return;
+      lastDelivery = Date.now();
+      supabase().rpc("deliver_reminders").then(({ data }) => { if (data) reload(); }, () => {});
+    };
+    deliver();
+    const t = setInterval(deliver, 60_000);
+    document.addEventListener("visibilitychange", deliver);
+    return () => { clearInterval(t); document.removeEventListener("visibilitychange", deliver); };
+  }, [reload]);
   return rows?.length ?? 0;
 }

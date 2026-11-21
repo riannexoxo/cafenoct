@@ -9,6 +9,9 @@ import { clientLabel, type Client } from "@/lib/types";
 import Modal from "./modal";
 import Icon from "./icon";
 import { labelTone, type VTask } from "./views/shared";
+import TemplatePicker, { list, str } from "./template-picker";
+import RemindButton from "./remind-button";
+import TaskFiles, { ATTACH, cleanFiles } from "./task-files";
 import "@/styles/views.css";
 
 export type TaskDraft = Partial<VTask>;
@@ -60,8 +63,11 @@ export default function TaskForm({ task = {}, clients, projects, onClose, onSave
   async function remove() {
     if (!task.id) return;
     if (!sure) return setSure(true);
+    const { data: cur } = await supabase().from("tasks").select("files").eq("id", task.id).maybeSingle<{ files: unknown }>(); // includes files attached just now
     const { error } = await supabase().from("tasks").delete().eq("id", task.id);
     if (error) return toast("Could not delete. Try again.");
+    const paths = cleanFiles(cur?.files).map((f) => f.path);
+    if (paths.length) await supabase().storage.from(ATTACH).remove(paths); // its attachments go with it
     toast("Task deleted");
     onSaved();
     onClose();
@@ -81,6 +87,19 @@ export default function TaskForm({ task = {}, clients, projects, onClose, onSave
     if (l && !labels.some((x) => x.toLowerCase() === l.toLowerCase()) && labels.length < 20) setLabels((xs) => [...xs, l]);
     setNewLabel("");
   };
+  // Templates keep the reusable parts only: never ids, dates, client or files.
+  const tplData = () => ({ title: title.trim(), notes, priority, labels, subtasks: subs.map((x) => ({ title: x.title })), links: links.map((l) => ({ url: l.url, label: l.label })) });
+  const applyTpl = (d: Record<string, unknown>) => {
+    if (str(d.title)) setTitle(str(d.title, 500));
+    setNotes(str(d.notes, 20000));
+    setPriority(["low", "med", "high"].includes(str(d.priority)) ? str(d.priority) : "med");
+    setLabels([...new Set(list(d.labels).map((l) => str(l, 40).trim()).filter(Boolean))].slice(0, 20));
+    setSubs(list(d.subtasks, 200).map((x) => str((x as { title?: unknown })?.title, 300).trim()).filter(Boolean).map((t) => ({ id: uid(), title: t, done: false })));
+    setLinks(list(d.links, 50).flatMap((x) => {
+      const o = (x ?? {}) as { url?: unknown; label?: unknown }, u = safe(str(o.url, 2000).trim());
+      return u ? [{ id: uid(), url: u, label: str(o.label, 200).trim() || new URL(u).hostname.replace("www.", "") }] : [];
+    }));
+  };
   const addSub = () => { if (!newSub.trim()) return; setSubs((s) => [...s, { id: uid(), title: newSub.trim(), done: false }]); setNewSub(""); };
   const addLink = () => { const u = safe(newLink.trim()); if (!u) return toast("Paste a full link."); let label = u; try { label = new URL(u).hostname.replace("www.", ""); } catch {} setLinks((l) => [...l, { id: uid(), url: u, label }]); setNewLink(""); };
 
@@ -91,6 +110,7 @@ export default function TaskForm({ task = {}, clients, projects, onClose, onSave
         <div className="row" style={{ gap: 6 }}>{COLUMNS.map((c) => (
           <button key={c.key} type="button" className={`fmt${status === c.key ? " on" : ""}`} style={{ ["--f" as string]: c.tone }} aria-pressed={status === c.key} onClick={() => setStat(c.key)}><i />{c.label}</button>
         ))}</div>
+        <TemplatePicker kind="task" pick={!task.id} data={tplData} onApply={applyTpl} />
         <div className="form">
           <div className="field"><label htmlFor="tk-client">Client</label><select id="tk-client" value={clientId} onChange={(e) => { setClientId(e.target.value); setProjectId(""); }}><option value="">Personal</option>{clients.filter((c) => c.status !== "Past" || c.id === clientId).map((c) => <option key={c.id} value={c.id}>{clientLabel(c)}</option>)}</select></div>
           <div className="field"><label htmlFor="tk-project">Project</label><select id="tk-project" value={projectId} onChange={(e) => setProjectId(e.target.value)}><option value="">No project</option>{projectList.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
@@ -123,6 +143,12 @@ export default function TaskForm({ task = {}, clients, projects, onClose, onSave
             <div className="row" style={{ flexWrap: "nowrap" }}><input value={newLink} onChange={(e) => setNewLink(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addLink(); } }} placeholder="Paste a Drive, Canva or doc link" /><button type="button" className="btn small" onClick={addLink}>Add</button></div>
           </div>
           <div className="field full"><label htmlFor="tk-notes">Notes</label><textarea id="tk-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Details and instructions from the client…" /></div>
+          {task.id
+            ? <>
+              <TaskFiles taskId={task.id} initial={task.files} />
+              <div className="field full"><label>Reminders</label><RemindButton title={title || task.title || ""} href={`/work?task=${task.id}`} entity="task" entityId={task.id} clientId={clientId || null} /></div>
+            </>
+            : <div className="field full"><label>Files and reminders</label><small className="muted">Save the task first to attach files or set a reminder.</small></div>}
         </div>
         {task.id && <Thread task={task} />}
         <div className="modal-foot">

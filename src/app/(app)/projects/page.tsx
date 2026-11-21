@@ -7,7 +7,7 @@ export default async function ProjectsPage() {
   const clients = await getClients();
   return (
     <>
-      <div className="head"><div><div className="eyebrow">Workspace</div><h1>Projects</h1><p>Start from a template for the role and every step lands on your Work board with a due date.</p></div></div>
+      <div className="head"><div><h1>Projects</h1><p>Start from a template for the role and every step lands on your Work board with a due date.</p></div></div>
       <Projects clients={clients} />
     </>
   );

@@ -12,7 +12,6 @@ export default async function AutomationsPage() {
     <>
       <div className="head">
         <div>
-          <div className="eyebrow">Runs by itself</div>
           <h1>Automations</h1>
           <p>Gentle nudges for EODs, today&apos;s tasks, invoices and meetings. CafeNoct checks every 5 minutes, even when it&apos;s closed.</p>
         </div>

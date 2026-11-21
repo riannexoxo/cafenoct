@@ -47,21 +47,21 @@ export async function uploadWorkFile(file: File, deliverableId: string): Promise
 
 // Signed links for a set of files, refreshed before they expire (links last an hour).
 const cache = new Map<string, { url: string; until: number }>();
-export function useSigned(paths: string[]) {
+export function useSigned(paths: string[], bucket = BUCKET) {
   const key = [...new Set(paths.filter(Boolean))].sort().join("|");
   const [urls, setUrls] = useState<Record<string, string>>({});
   useEffect(() => {
     const list = key ? key.split("|") : [];
-    const now = Date.now(), need = list.filter((p) => !(cache.get(p)?.until ?? 0) || cache.get(p)!.until < now + 60000);
-    const done = () => setUrls(Object.fromEntries(list.map((p) => [p, cache.get(p)?.url ?? ""])));
+    const now = Date.now(), need = list.filter((p) => (cache.get(`${bucket}:${p}`)?.until ?? 0) < now + 60000);
+    const done = () => setUrls(Object.fromEntries(list.map((p) => [p, cache.get(`${bucket}:${p}`)?.url ?? ""])));
     if (!need.length) { done(); return; }
     let alive = true;
-    supabase().storage.from(BUCKET).createSignedUrls(need, 3600).then(({ data }) => {
-      (data ?? []).forEach((d) => { if (d.signedUrl && d.path) cache.set(d.path, { url: d.signedUrl, until: Date.now() + 3500 * 1000 }); });
+    supabase().storage.from(bucket).createSignedUrls(need, 3600).then(({ data }) => {
+      (data ?? []).forEach((d) => { if (d.signedUrl && d.path) cache.set(`${bucket}:${d.path}`, { url: d.signedUrl, until: Date.now() + 3500 * 1000 }); });
       if (alive) done();
     });
     return () => { alive = false; };
-  }, [key]);
+  }, [key, bucket]);
   return urls;
 }
 

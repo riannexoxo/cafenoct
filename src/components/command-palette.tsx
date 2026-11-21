@@ -118,7 +118,7 @@ export default function CommandPalette() {
   async function favoriteThis() {
     const label = document.title.split(" · ")[0] || "Page";
     const { error } = await supabase().from("favorites").insert({ label, href: path, kind: "page" });
-    toast(error ? (error.code === "23505" ? "Already in favorites." : "Couldn't add that.") : `★ Added ${label} to favorites`);
+    toast(error ? (error.code === "23505" ? "Already in favorites." : "Couldn't add that.") : `Added ${label} to favorites`);
     setOpen(false);
   }
 
@@ -164,7 +164,7 @@ export default function CommandPalette() {
         </ul>
         <div className="cmdk-foot">
           <span><kbd>↑</kbd><kbd>↓</kbd> move <kbd>↵</kbd> open</span>
-          <button type="button" className="linkish" onClick={favoriteThis}>★ Favorite this page</button>
+          <button type="button" className="linkish" onClick={favoriteThis}><Icon name="star" size={15} />Favorite this page</button>
         </div>
       </div>
     </div>

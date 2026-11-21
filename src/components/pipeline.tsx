@@ -122,7 +122,6 @@ export default function Pipeline() {
   const head = (
     <div className="head">
       <div>
-        <div className="eyebrow">Win the work</div>
         <h1>Pipeline</h1>
         <p>Every lead and client, from first hello to done. Drag a card, or focus it and press Shift + arrows.</p>
       </div>

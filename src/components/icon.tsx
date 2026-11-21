@@ -33,6 +33,10 @@ const PATHS = {
   today: `<path d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>`,
   updown: `<path d="m7 9 5-5 5 5M7 15l5 5 5-5"/>`,
   x: `<path d="M6 6l12 12M18 6 6 18"/>`,
+  star: `<path d="m12 3.5 2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 16.9l-5.3 2.7 1-5.8-4.2-4.1 5.9-.9z"/>`,
+  alert: `<path d="M12 4 21.5 20h-19zM12 10v4.5M12 17.2v.3"/>`,
+  dot: `<circle cx="12" cy="12" r="4.5" fill="currentColor"/>`,
+  ring: `<circle cx="12" cy="12" r="4.5"/>`,
 } as const;
 
 export type IconName = keyof typeof PATHS;

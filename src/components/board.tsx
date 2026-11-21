@@ -26,7 +26,7 @@ export function BoardMotion({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const mm = gsap.matchMedia();
     mm.add("(prefers-reduced-motion: no-preference)", () => {
-      gsap.from(ref.current!.querySelectorAll(":scope > .note"), { y: 18, opacity: 0, rotate: () => gsap.utils.random(-1.5, 1.5), duration: 0.6, ease: "back.out(1.6)", stagger: 0.06, clearProps: "transform,opacity" });
+      gsap.from(ref.current!.querySelectorAll(":scope > *"), { y: 18, opacity: 0, rotate: () => gsap.utils.random(-1.5, 1.5), duration: 0.6, ease: "back.out(1.6)", stagger: 0.06, clearProps: "transform,opacity" });
     });
     return () => mm.revert();
   }, []);

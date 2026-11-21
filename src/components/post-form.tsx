@@ -10,6 +10,8 @@ import Modal from "./modal";
 import Icon from "./icon";
 import MediaThumb from "./media-thumb";
 import ShareLinkButton from "./share-link-button";
+import TemplatePicker, { list, str } from "./template-picker";
+import RemindButton from "./remind-button";
 import { publishCheck, publishNow, useAccounts } from "@/lib/publish";
 import "@/styles/social.css";
 
@@ -124,6 +126,19 @@ export default function PostForm({ post = {}, clients, pillars, onClose, onSaved
     catch { toast("Copy was blocked here."); }
   }
 
+  // Templates keep the reusable parts only: never dates, status, client or media.
+  const tplData = () => ({ format, platforms, title: title.trim(), caption, hashtags: tags.trim(), hook: hook.trim(), pillar: pillar.trim() });
+  const applyTpl = (d: Record<string, unknown>) => {
+    const ps = list(d.platforms, 20).map((x) => str(x)).filter((x) => PLATFORMS.some((p) => p.name === x));
+    if (ps.length) setPlatforms([...new Set(ps)]);
+    if (FORMATS.includes(str(d.format))) setFormat(str(d.format));
+    if (str(d.title)) setTitle(str(d.title, 300));
+    setCaption(str(d.caption, 5000));
+    setTags(str(d.hashtags, 2000));
+    setHook(str(d.hook, 500));
+    setPillar(str(d.pillar, 80));
+  };
+
   const heading = post.id ? title || "Edit post" : "Plan a post";
   return (
     <Modal label={heading} onClose={onClose} wide>
@@ -139,6 +154,7 @@ export default function PostForm({ post = {}, clients, pillars, onClose, onSaved
             <button type="button" className="btn small" onClick={publish} disabled={publishing || !chk.ok} title={chk.why}><Icon name="repeat" />{publishing ? "Trying…" : "Retry"}</button>
           </div>
         )}
+        <TemplatePicker kind="post" pick={!id} data={tplData} onApply={applyTpl} />
         <div className="form">
           <div className="field full"><label>Platforms</label>
             <div className="row" style={{ gap: 6 }}>{PLATFORMS.map((p) => {
@@ -220,6 +236,7 @@ export default function PostForm({ post = {}, clients, pillars, onClose, onSaved
             {id ? <ShareLinkButton entity="post" entityId={id} clientId={clientId || null} /> : <small className="muted">Save the post first to get an approval link for your client.</small>}
             {status !== "Posted" && !chk.ok && <small className="muted">Publish now: {chk.why}</small>}
           </div>
+          {id && <div className="field full"><label>Reminders</label><RemindButton title={title || hook || "Post"} href={`/content?post=${id}`} entity="post" entityId={id} clientId={clientId || null} /></div>}
           <div className="field full"><label htmlFor="pf-notes">Notes</label><textarea id="pf-notes" value={notes} onChange={(e) => setNotes(e.target.value)} style={{ minHeight: 60 }} placeholder="Music, client feedback, ideas for the next one…" /></div>
         </div>
         <div className="modal-foot">

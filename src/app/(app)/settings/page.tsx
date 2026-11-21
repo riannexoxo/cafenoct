@@ -20,7 +20,6 @@ export default async function Settings() {
     <>
       <div className="head">
         <div>
-          <div className="eyebrow">Your account</div>
           <h1>Settings</h1>
           <p>Your details, theme, payment emails, calendar, booking pages, request forms and Canva.</p>
         </div>

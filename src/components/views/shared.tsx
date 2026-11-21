@@ -12,7 +12,7 @@ export const VTASK_COLS = `${TASK_COLS},start_date,created_at,updated_at`;
 export type Lane = { key: string; label: string; color?: string; rows: VTask[] };
 export type CardCtx = {
   find: (id: string) => VTask | undefined;
-  props: (x: VTask) => { client?: Client; project?: Project; comments: number; showClient: boolean; today: string; onOpen: () => void };
+  props: (x: VTask) => { client?: Client; project?: Project; comments: number; showClient: boolean; today: string; cover?: string; onOpen: () => void };
 };
 
 export type ViewKind = "board" | "table" | "calendar" | "timeline";

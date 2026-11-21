@@ -60,7 +60,6 @@ export default function TimeView({ clients }: { clients: Client[] }) {
   const head = (
     <div className="head">
       <div>
-        <div className="eyebrow">Where your hours go</div>
         <h1>Time</h1>
         <p>Start a timer while you work, or log time after.</p>
       </div>

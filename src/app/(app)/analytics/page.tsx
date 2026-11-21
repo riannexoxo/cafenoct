@@ -9,7 +9,7 @@ export default async function AnalyticsPage() {
   const clients = await getClients();
   return (
     <>
-      <div className="head"><div><div className="eyebrow">Social media</div><h1>Analytics</h1><p>How every client&apos;s posts are doing, by platform, format and pillar.</p></div></div>
+      <div className="head"><div><h1>Analytics</h1><p>How every client&apos;s posts are doing, by platform, format and pillar.</p></div></div>
       <Analytics clients={clients} />
       <div style={{ marginTop: 16 }}><SocialConnect clients={clients.filter((c) => c.status !== "Past")} meta={metaReady()} tiktok={tiktokReady()} /></div>
     </>

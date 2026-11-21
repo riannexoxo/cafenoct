@@ -12,7 +12,7 @@ export default async function Work({ searchParams }: { searchParams: Promise<Sea
   const project = one(sp.project, 36), task = one(sp.task, 36);
   return (
     <>
-      <div className="head"><div><div className="eyebrow">Workspace</div><h1>Work</h1><p>Every task for every client in one place. See it as a board, a table, a calendar or a timeline.</p></div></div>
+      <div className="head"><div><h1>Work</h1><p>Every task for every client in one place. See it as a board, a table, a calendar or a timeline.</p></div></div>
       <WorkBoard clients={clients} projectId={project && UUID.test(project) ? project : undefined} taskId={task && UUID.test(task) ? task : undefined} q={one(sp.q, 200)} openNew={sp.new === "1"} />
     </>
   );

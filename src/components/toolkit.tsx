@@ -82,7 +82,7 @@ function Kit({ client }: { client?: Client; clients: Client[] }) {
       <div key={i.id} className={`bk${i.starred ? " starred" : ""}`}>
         <div className="bk-top">
           <span className="bk-kind">{section === "brand" ? k?.one : i.title || k?.one}{!i.client_id && client && <span className="pill" style={{ marginLeft: 6 }}>My library</span>}</span>
-          <button className="bk-star" aria-label={i.starred ? "Unstar" : "Star"} aria-pressed={i.starred} onClick={() => star(i)}>{i.starred ? "★" : "☆"}</button>
+          <button className="bk-star" aria-label={i.starred ? "Unstar" : "Star"} aria-pressed={i.starred} onClick={() => star(i)}><Icon name="star" size={17} /></button>
         </div>
         {section === "brand" && i.title && <b>{i.title}</b>}
         {i.body && <p className="bk-body">{i.body}</p>}

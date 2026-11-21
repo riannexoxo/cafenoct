@@ -12,7 +12,6 @@ export default async function InvoicesPage() {
     <>
       <div className="head">
         <div>
-          <div className="eyebrow">Getting paid</div>
           <h1>Invoices</h1>
           <p>Every client&apos;s invoices in one place: what&apos;s ready to bill, what you&apos;re waiting on, and what&apos;s paid.</p>
         </div>

@@ -8,9 +8,11 @@ import { downloadCsv } from "@/lib/csv";
 import { toast } from "@/lib/toast";
 import { clientLabel, type Client } from "@/lib/types";
 import TaskForm, { type TaskDraft } from "./task-form";
+import { ATTACH, firstImage } from "./task-files";
+import { useSigned } from "@/lib/work-files";
 import Seg from "./seg";
 import Icon from "./icon";
-import { Empty, VTASK_COLS, type CardCtx, type GroupBy, type Lane, type VTask, type ViewConfig, type ViewKind } from "./views/shared";
+import { Empty, VTASK_COLS, isImage, type CardCtx, type GroupBy, type Lane, type VTask, type ViewConfig, type ViewKind } from "./views/shared";
 import BoardView from "./views/board-view";
 import TableView from "./views/table-view";
 import CalendarView from "./views/calendar-view";
@@ -54,6 +56,12 @@ function Board({ clients, clientId, projectId, taskId, q: q0, openNew }: Props) 
   const [quick, setQuick] = useState("");
   const [form, setForm] = useState<TaskDraft | null>(() => (openNew ? { client_id: clientId ?? null, project_id: projectId ?? null, status: "todo", due_date: t } : null));
   const [importing, setImporting] = useState(false);
+  // Opens the task a link points at (/work?task=<id>, used by reminders).
+  useEffect(() => {
+    const id = new URLSearchParams(location.search).get("task");
+    if (!id || !/^[0-9a-f-]{36}$/i.test(id)) return;
+    supabase().from("tasks").select(VTASK_COLS).eq("id", id).maybeSingle<VTask>().then(({ data }) => { if (data) setForm(data); });
+  }, []);
   const since = addDays(t, -14);
   const [tasks, reload, setTasks] = useRows<VTask>(`work:${clientId ?? "all"}`, (s) => {
     let x = s.from("tasks").select(VTASK_COLS).or(`status.neq.done,done_at.gte.${since}`).order("position").order("due_date", { nullsFirst: false }).limit(800);
@@ -82,6 +90,8 @@ function Board({ clients, clientId, projectId, taskId, q: q0, openNew }: Props) 
   const shown = all.filter((x) => (!who || x.client_id === who) && (!proj || x.project_id === proj) && (!label || (x.labels ?? []).includes(label))
     && (!status || colOf(x.status) === status) && (!q || `${x.title} ${x.notes} ${(x.labels ?? []).join(" ")}`.toLowerCase().includes(q.toLowerCase())));
   const open = shown.filter((x) => x.status !== "done");
+  // A task with no image link gets its first attached image as the card cover.
+  const covers = useSigned(shown.filter((x) => !(x.links ?? []).some((l) => isImage(l.url))).map((x) => firstImage(x.files)), ATTACH);
   const filtered = !!(who && !clientId) || !!proj || !!label || !!status || !!q;
   const config: ViewConfig = { view, who, proj, label, status, q, group };
   const apply = (c: Partial<ViewConfig>) => {
@@ -101,7 +111,7 @@ function Board({ clients, clientId, projectId, taskId, q: q0, openNew }: Props) 
   };
   const ctx: CardCtx = {
     find: (id) => all.find((x) => x.id === id),
-    props: (x) => ({ client: client(x.client_id), project: project(x.project_id), comments: counts.get(x.id) ?? 0, showClient: !clientId, today: t, onOpen: () => setForm(x) }),
+    props: (x) => ({ client: client(x.client_id), project: project(x.project_id), comments: counts.get(x.id) ?? 0, showClient: !clientId, today: t, cover: covers[firstImage(x.files)] || undefined, onOpen: () => setForm(x) }),
   };
 
   // Moving into Done goes through setStatus, so a repeating task books its next one.
@@ -190,13 +200,16 @@ function Board({ clients, clientId, projectId, taskId, q: q0, openNew }: Props) 
         <Seg label="View" options={[["board", "Board"], ["table", "Table"], ["calendar", "Calendar"], ["timeline", "Timeline"]]} value={view} onChange={setView} />
         <button className="btn solid" onClick={newTask}><Icon name="plus" />New task</button>
       </div>
-      <SavedViews current={config} apply={apply} />
       <div className="row vfilters">
         <form className="todo-add grow" onSubmit={add} style={{ margin: 0, minWidth: 200 }}>
           <span className="todo-plus"><Icon name="plus" size={16} /></span>
           <input value={quick} onChange={(e) => setQuick(e.target.value)} placeholder="Quick add a task for today" aria-label="Quick add" />
         </form>
         <input className="search" style={{ width: 150 }} type="search" placeholder="Search" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search tasks" />
+        <button className="btn small ghost" onClick={exportCsv} disabled={!shown.length}><Icon name="file" size={15} />Export</button>
+        <button className="btn small ghost" onClick={() => setImporting(true)}><Icon name="updown" size={15} />Import</button>
+      </div>
+      <div className="row vsels" role="group" aria-label="Filter and group">
         {!clientId && <select className={sel} value={who} onChange={(e) => { setWho(e.target.value); setProj(""); }} aria-label="Client"><option value="">All clients</option>{clients.filter((c) => c.status !== "Past").map((c) => <option key={c.id} value={c.id}>{clientLabel(c)}</option>)}</select>}
         {plist.length > 0 && <select className={sel} value={proj} onChange={(e) => setProj(e.target.value)} aria-label="Project"><option value="">All projects</option>{plist.filter((p) => !who || p.client_id === who).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>}
         {allLabels.length > 0 && <select className={sel} value={label} onChange={(e) => setLabel(e.target.value)} aria-label="Label"><option value="">All labels</option>{allLabels.map((l) => <option key={l} value={l}>{l}</option>)}</select>}
@@ -204,8 +217,7 @@ function Board({ clients, clientId, projectId, taskId, q: q0, openNew }: Props) 
         {(view === "board" || view === "table") && <select className={sel} value={group} onChange={(e) => setGroup(e.target.value as GroupBy)} aria-label="Group by"><option value="status">Group: status</option><option value="client">Group: client</option><option value="project">Group: project</option></select>}
         {filtered && <button className="btn small ghost" onClick={clear}>Clear</button>}
         <span className="grow" />
-        <button className="btn small ghost" onClick={exportCsv} disabled={!shown.length}><Icon name="file" size={15} />Export</button>
-        <button className="btn small ghost" onClick={() => setImporting(true)}><Icon name="updown" size={15} />Import</button>
+        <SavedViews current={config} apply={apply} />
       </div>
 
       {body()}

@@ -15,7 +15,7 @@ export default async function Clients() {
   return (
     <>
       <div className="head">
-        <div><div className="eyebrow">Your people</div><h1>Clients</h1><p>{clients.filter((c) => c.status === "Active").length} active · {clients.length} total</p></div>
+        <div><h1>Clients</h1><p>{clients.filter((c) => c.status === "Active").length} active · {clients.length} total</p></div>
         <div className="row" style={{ gap: 8 }}>
           <ClientsCsv />
           <Link className="btn solid" href="/clients/new"><Icon name="plus" />New client</Link>

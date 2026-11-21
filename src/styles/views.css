@@ -126,3 +126,10 @@ table.vsheet { min-width: 720px; }
   .vsaved-chip, .vsaved-add, .vtoggle > i, .vtoggle > i::after, .vtl-ms i, .vtray { transition: none; }
   .vsaved-chip:active, .vsaved-add:active { transform: none; }
 }
+
+/* Work toolbar: add and search on one line, filters and saved views on the next. */
+.vfilters .search[type="search"] { flex: 0 1 200px; }
+.vsels { gap: 8px; flex-wrap: wrap; margin-top: -4px; }
+.vsels .vsel { width: auto; flex: 0 1 auto; max-width: 200px; padding-right: 30px; }
+.vsels .grow { min-width: 8px; }
+@media (max-width: 720px) { .vsels .vsel { flex: 1 1 140px; max-width: none; } }

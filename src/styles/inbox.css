@@ -28,3 +28,6 @@ a.inbox-title:hover { color: var(--accent-ink); }
 @media (prefers-reduced-motion: reduce) { .inbox-i { transition: none; } }
 .tabbar button { position: relative; }
 .tab-dot { position: absolute; top: 6px; right: calc(50% - 16px); width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.ib { display: inline-grid; place-items: center; }
+.ib[aria-pressed="true"] svg { fill: currentColor; }
+.inbox-mark svg { display: block; }

@@ -99,6 +99,50 @@ The 5 server-only tables (`app_owners`, `invites`, `canva_tokens`, `social_token
 3. Add a nonce-based `script-src` to the CSP. Worth testing on a preview deploy first.
 4. Ask for email confirmation on sign-up instead of `email_confirm: true`. Waits for custom SMTP because of the 2-emails-an-hour cap.
 
+## Round 2 (Nov 22): polish + 4 harvested features
+
+**New**
+- **My Day home (Asana).** Today is one ranked list:
+  - Overdue first, then what's in progress, then meetings and posts by time, then everything else by priority.
+  - It mixes tasks, meetings, posts going out, invoices due and designs or edits due.
+  - Tick tasks off in place. Each task has a one-click timer. Quick add understands `@client`, `tomorrow` and `!`.
+- **Widget board (Monday).** The right column is widgets you choose. Press **Customize** to add, remove, drag or arrow them into order. Your layout saves to your profile and follows you to every device.
+  - Widgets: Timer, Coming up, Posts this week, Waiting on clients, This week (hours vs goal), Waiting on payment, Paid this month, Pipeline, Quick add, Client portals, To-do list.
+- **Templates for anything (Notion).**
+  - Tasks, posts and invoices each have *Save as template*, and *From template* when you create a new one.
+  - Templates never copy clients, dates or numbers. Remove one by tapping its x twice.
+- **Reminders (Slack).**
+  - *Remind me* is on tasks, posts and invoices: in 1 hour, this evening, tomorrow 9am, next Monday, or a time you pick.
+  - When it's due it lands in your Inbox with the badge.
+  - Delivery runs while CafeNoct is open on any device. No email or push yet.
+- **Files on task cards (Trello).**
+  - Drag files onto a saved task: images, PDFs, docs, sheets, zip or video, up to 25 MB each and 20 per task.
+  - Files are private, and each opens through a 1-hour signed link.
+  - The first image becomes the card cover.
+
+**Polish**
+- Removed the small uppercase labels above every page title, a dated pattern. The ones that carry information (client portal, rate, schedule) stay as a quiet grey line.
+- Replaced the coloured stripe down one edge of task, post, project, idea and client-clock cards with a soft full tint. Calendar event blocks keep their edge, because that's the familiar calendar look.
+- Loading boxes now show a soft tinted shimmer instead of blank white cards.
+- Work toolbar: quick add, search and export/import on one line; filters, grouping and saved views on the next.
+- The Inbox used text symbols (☆ ● ×) as icons. They're now real drawn icons, and so are the toolkit and Cmd+K stars.
+- Caret, checkboxes, scrollbars and number columns now use the house colours and even-width numbers.
+- Reminder links open the exact task (`/work?task=…`) or post.
+
+**Database:** one more additive migration, `0022_templates_reminders_files`:
+- Tables `templates` and `reminders`, both owner-only RLS for signed-in users, created in the same migration.
+- `tasks.files`.
+- A private `attachments` bucket with per-user folder policies.
+- `deliver_reminders()`, which runs as the signed-in person (security invoker, not definer).
+
+**Checked in the browser** with a test account: My Day ranking and ticking off; Customize (reorder, remove, add, saved to the profile); a reminder created, then delivered to the Inbox; a template saved, then applied to a new task; the phone width (375px) and night mode.
+**Not click-tested:** file upload, because the browser pane can't pick a file. The code and storage policies were reviewed instead.
+
+**Test account (yours to delete):**
+- `cafenoct-test@example.com` with 3 sample clients and sample tasks, time, invoices and posts. Invite code `NOCTQA2611` was used to create it.
+- The password is in your local `.env.local` (gitignored, never committed).
+- To remove it: Supabase → Authentication → Users → delete that user. Its sample data goes with it.
+
 ## Click-through test (about 20 minutes)
 1. `/login`: Nocti shuts her eyes on the password, the eye toggle works, Forgot password works.
 2. Home board: cards drift in; quick add Task, Event and Invoice.
