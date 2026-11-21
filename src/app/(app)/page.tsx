@@ -7,6 +7,7 @@ import WeekStats from "@/components/week-stats";
 import TodoList from "@/components/todo-list";
 import Timers from "@/components/timers";
 import ClientAvatar from "@/components/client-avatar";
+import { BoardMotion, QuickAddNote, UnpaidNote, UpcomingNote } from "@/components/board";
 
 export const metadata = { title: "Today" };
 
@@ -21,10 +22,13 @@ export default async function Today() {
         <Link className="btn solid" href="/focus"><Icon name="focus" />Start focus</Link>
       </div>
       <WeekStats clients={list} goal={profile?.weekly_goal || 40} currency={profile?.currency} />
-      <div className="grid g2" style={{ alignItems: "start" }}>
-        <TodoList clients={list} />
-        <Timers clients={list} />
-      </div>
+      <BoardMotion>
+        <div className="note note-blush note-tall"><Timers clients={list} /></div>
+        <div className="note note-cream note-tall"><TodoList clients={list} /></div>
+        <UpcomingNote clients={list} />
+        <UnpaidNote clients={list} />
+        <QuickAddNote clients={list} from={{ name: profile?.business || profile?.name || "", email: profile?.invoice_email || "" }} />
+      </BoardMotion>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div className="row" style={{ justifyContent: "space-between" }}>
           <h2 style={{ fontSize: 18, fontWeight: 500 }}>Client portals</h2>
