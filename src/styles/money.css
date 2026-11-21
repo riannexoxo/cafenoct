@@ -1,0 +1,33 @@
+/* Wallet money dashboard: stats, in/out chart, expected income, transactions, expenses */
+.stats.money-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 760px) { .stats.money-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 420px) { .stats.money-stats .stat .v { font-size: 22px; } }
+.money-stats .stat .s.good-t { color: var(--good); }
+.money-stats .stat .s.bad-t, .money-stats .stat .v.bad-t { color: var(--bad); }
+
+.chart-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+.chart-bar .legend { margin-top: 0; }
+.legend .lg.money-in { background: var(--accent); }
+.legend .lg.money-out { background: var(--caramel); }
+.week-chart .bout { fill: var(--caramel); opacity: .75; }
+
+/* Expected income: honey when due within a week, berry tint when overdue */
+button.li.act.due { border-left: 3px solid transparent; padding-left: 10px; }
+button.li.act.due.soon { border-left-color: var(--honey); background: color-mix(in srgb, var(--butter) 35%, transparent); }
+button.li.act.due.late { border-left-color: var(--accent); background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.due-r { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; text-align: right; }
+.due-pill.soon { background: var(--butter); color: var(--butter-ink); }
+.due-pill.late { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-ink); }
+.drafts-h { margin: 16px 0 4px; }
+
+/* Transactions */
+.tx-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.tx-bar .search { min-height: 40px; }
+.tx-bar .search.grow { flex: 1 1 200px; width: auto; }
+.tx-cat { flex: none; font-size: 11px; max-width: 34%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 520px) { .tx-cat { display: none; } }
+.tx-more { margin: 10px auto 0; display: flex; }
+.act-ico.out { background: color-mix(in srgb, var(--caramel) 22%, transparent); color: var(--caramel-ink); }
+
+.receipt-row { gap: 8px; }
+button.li.act:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

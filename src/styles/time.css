@@ -1,0 +1,23 @@
+/* Time page: filters, client totals with timers, weekly report, entries */
+.time-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; padding-block: 14px; }
+.time-selects { gap: 8px; flex: 1 1 320px; justify-content: flex-end; }
+.time-selects .search { width: auto; flex: 1 1 140px; max-width: 220px; min-height: 40px; }
+.time-dates { gap: 8px; }
+.time-dates .field { width: 150px; }
+@media (max-width: 600px) { .time-selects { justify-content: stretch; } .time-selects .search { max-width: none; } .time-dates .field { flex: 1 1 130px; width: auto; } }
+
+.time-client { flex-direction: column; align-items: stretch; gap: 6px; }
+.time-name { min-width: 0; overflow-wrap: anywhere; color: inherit; text-decoration: none; }
+a.time-name:hover { color: var(--accent-ink); }
+.time-client-acts { gap: 6px; }
+
+.timer-btn.on { background: var(--blush); border-color: color-mix(in srgb, var(--rose) 50%, transparent); color: var(--rose-ink); }
+.timer-btn .num { font-variant-numeric: tabular-nums; }
+.btn.small.timer-btn { min-height: 40px; }
+
+.time-table tr.click:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.time-billed { margin-left: 6px; }
+.time-more { margin: 12px auto 4px; display: flex; min-height: 40px; }
+
+.week-report h3 .btn { min-height: 36px; }
+.week-report-cols { gap: 18px; }

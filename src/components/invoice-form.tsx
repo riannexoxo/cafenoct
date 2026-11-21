@@ -12,7 +12,7 @@ import Modal from "./modal";
 import Icon from "./icon";
 
 export type InvoiceDraft = Partial<Invoice> & { entryIds?: string[]; markPaid?: boolean };
-const CURRENCIES = ["USD", "PHP", "AUD", "CAD", "GBP", "EUR", "NZD", "SGD"];
+export const CURRENCIES = ["USD", "PHP", "AUD", "CAD", "GBP", "EUR", "NZD", "SGD"];
 
 // Create or edit an invoice. "payment" mode is a quick way to record money received without an invoice.
 export default function InvoiceForm({ inv = {}, mode = "invoice", clients, existing, from, onClose, onSaved }: {
@@ -58,7 +58,10 @@ export default function InvoiceForm({ inv = {}, mode = "invoice", clients, exist
       : await supabase().from("invoices").insert(r).select("id").single();
     if (res.error || !res.data) { setBusy(false); return toast(/unique|duplicate/i.test(res.error?.message ?? "") ? "That invoice number is already used." : "Could not save. Check your connection."); }
     // Hours that went into this invoice are marked as billed so they aren't invoiced twice.
-    if (inv.entryIds?.length) await supabase().from("time_entries").update({ invoice_id: res.data.id }).in("id", inv.entryIds);
+    if (inv.entryIds?.length) {
+      const marked = await supabase().from("time_entries").update({ invoice_id: res.data.id }).in("id", inv.entryIds);
+      if (marked.error) { setBusy(false); toast("Invoice saved, but its hours still show as unbilled. Check your connection."); onSaved?.(); return onClose(); }
+    }
     setBusy(false);
     // Money just landed: play the little wallet animation instead of a plain message.
     if (status === "paid" && (!inv.id || inv.markPaid || inv.status !== "paid")) {

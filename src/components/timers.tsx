@@ -9,10 +9,10 @@ import { clientLabel, type Client } from "@/lib/types";
 import Icon from "./icon";
 import TimeForm, { type TimeDraft } from "./time-form";
 
-type Timer = { id: string; client_id: string | null; note: string; started_at: string };
+export type Timer = { id: string; client_id: string | null; task_id?: string | null; note: string; started_at: string };
 
 export function useTimers() {
-  return useRows<Timer>("timers", (s) => s.from("timers").select("id,client_id,note,started_at").order("started_at"), ["timers"]);
+  return useRows<Timer>("timers", (s) => s.from("timers").select("id,client_id,task_id,note,started_at").order("started_at"), ["timers"]);
 }
 
 function useNow() {
@@ -21,8 +21,8 @@ function useNow() {
   return now;
 }
 
-export async function startTimer(clientId: string | null, note = "") {
-  return supabase().from("timers").insert({ client_id: clientId, note }).select("id,client_id,note,started_at").single();
+export async function startTimer(clientId: string | null, note = "", taskId: string | null = null) {
+  return supabase().from("timers").insert({ client_id: clientId, note, task_id: taskId }).select("id,client_id,task_id,note,started_at").single<Timer>();
 }
 
 // Stopping turns the timer into a time entry in one database step (stop_timer): the timer is claimed and the
