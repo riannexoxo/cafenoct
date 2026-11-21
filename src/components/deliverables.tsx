@@ -11,6 +11,8 @@ import { BUCKET, coverOf, useSigned } from "@/lib/work-files";
 import Modal from "./modal";
 import Icon from "./icon";
 import WorkFiles from "./work-files";
+import ShareLinkButton from "./share-link-button";
+import CommentThread from "./comment-thread";
 
 const noop = () => () => {};
 const href = (u?: string) => { if (!u?.trim()) return ""; try { const x = new URL(/^https?:\/\//i.test(u) ? u.trim() : `https://${u.trim()}`); return x.href; } catch { return ""; } };
@@ -213,6 +215,10 @@ function DeliverableForm({ d, kind, clients, canva, onClose, onSaved, onMove }: 
             <WorkFiles id={d.id} kind={kind} files={f.files ?? []} canva={f.canva ?? {}} canvaReady={canva}
               onChange={(p) => { setF((x) => ({ ...x, ...p })); onSaved(); }} />
           ) : <p className="small muted full" style={{ margin: 0 }}>Save it once, then add files{kind === "design" ? " or link a Canva design" : ""}.</p>}
+          {d.id && d.client_id && (
+            <div className="field full"><span className="small muted">Client approval</span><ShareLinkButton entity="deliverable" entityId={d.id} clientId={d.client_id} /></div>
+          )}
+          {d.id && <CommentThread entity="deliverable" entityId={d.id} clientId={d.client_id ?? null} />}
           <div className="field"><label>Revision rounds</label>
             <div className="row" style={{ gap: 6 }}>
               <button type="button" className="btn small" onClick={() => set("revisions", Math.max(0, (Number(f.revisions) || 0) - 1))} aria-label="One less round">−</button>
