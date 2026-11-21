@@ -11,6 +11,9 @@ import { BUCKET, coverOf, useSigned } from "@/lib/work-files";
 import Modal from "./modal";
 import Icon from "./icon";
 import WorkFiles from "./work-files";
+import ShareLinkButton from "./share-link-button";
+import CommentThread from "./comment-thread";
+import { ReactionCounts } from "./reactions";
 
 const noop = () => () => {};
 const href = (u?: string) => { if (!u?.trim()) return ""; try { const x = new URL(/^https?:\/\//i.test(u) ? u.trim() : `https://${u.trim()}`); return x.href; } catch { return ""; } };
@@ -68,7 +71,7 @@ function Queue({ kind, clients, clientId, canva = false }: { kind: Kind; clients
     return (
       <div key={x.id} className="wcardt" draggable onDragStart={(e) => e.dataTransfer.setData("text/dlv", x.id)} onClick={() => setForm(x)} role="button" tabIndex={0}
         onKeyDown={(e) => { if (e.key === "Enter") setForm(x); }} style={{ ["--c" as string]: c?.color ?? "var(--line-strong)" }}>
-        {cover && <img src={cover} alt="" className="dlv-cover" loading="lazy" draggable={false} />}
+        {cover && <img src={cover} alt="" className="dlv-cover" loading="lazy" decoding="async" draggable={false} />}
         <b>{x.title}</b>
         <div className="wt-meta">
           {!clientId && <span className="wt-client"><i />{c ? clientLabel(c) : "Personal"}</span>}
@@ -213,6 +216,11 @@ function DeliverableForm({ d, kind, clients, canva, onClose, onSaved, onMove }: 
             <WorkFiles id={d.id} kind={kind} files={f.files ?? []} canva={f.canva ?? {}} canvaReady={canva}
               onChange={(p) => { setF((x) => ({ ...x, ...p })); onSaved(); }} />
           ) : <p className="small muted full" style={{ margin: 0 }}>Save it once, then add files{kind === "design" ? " or link a Canva design" : ""}.</p>}
+          {d.id && d.client_id && (
+            <div className="field full"><span className="small muted">Client approval</span><ShareLinkButton entity="deliverable" entityId={d.id} clientId={d.client_id} /></div>
+          )}
+          {d.id && <ReactionCounts entityId={d.id} full />}
+          {d.id && <CommentThread entity="deliverable" entityId={d.id} clientId={d.client_id ?? null} />}
           <div className="field"><label>Revision rounds</label>
             <div className="row" style={{ gap: 6 }}>
               <button type="button" className="btn small" onClick={() => set("revisions", Math.max(0, (Number(f.revisions) || 0) - 1))} aria-label="One less round">−</button>

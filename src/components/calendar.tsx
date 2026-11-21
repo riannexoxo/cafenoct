@@ -25,7 +25,7 @@ type Drag = { mode: "create" | "move" | "resize"; it?: Placed; y0: number; a: nu
 type Form = { kind: "ev"; draft: EventDraft } | { kind: "wk"; draft: Partial<TimeEntry> } | { kind: "card"; o: Occurrence } | null;
 
 const noop = () => () => {};
-const ENTRY_COLS = "id,client_id,started_at,minutes,note,source";
+const ENTRY_COLS = "id,client_id,task_id,started_at,minutes,note,source";
 
 // Week or day grid: usual client hours, blocked time, logged time and running timers.
 // tz is the time zone the grid is drawn in: yours on My calendar, the client's in their portal.

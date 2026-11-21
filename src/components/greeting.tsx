@@ -12,8 +12,8 @@ export default function Greeting({ name }: { name?: string }) {
   const [date, greet] = parts.split("|");
   return (
     <div>
-      <div className="eyebrow">{date || " "}</div>
       <h1>{greet}{name ? `, ${name}` : ""}.</h1>
+      <p>{date || " "}</p>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/use-rows";
+import { supabase, useRows } from "@/lib/use-rows";
 import { hm, isoAt, localParts, minToTime, snap15, toMin, type TimeEntry } from "@/lib/cal";
 import { toast } from "@/lib/toast";
 import { deviceTz, partsIn, todayIn, tzShort } from "@/lib/tz";
@@ -23,6 +23,15 @@ export default function TimeForm({ entry = {}, clients, onClose, onSaved, tz: zo
     return { date: todayIn(tz), start: minToTime(Math.max(0, now - m)), end: minToTime(now), minutes: m };
   });
   const [clientId, setClientId] = useState(entry.client_id ?? "");
+  const [taskId, setTaskId] = useState(entry.task_id ?? "");
+  // Callers that never loaded task_id leave it undefined: keep it as it is unless a task is picked here.
+  const [taskKnown, setTaskKnown] = useState(!entry.id || entry.task_id !== undefined);
+  const keep = entry.task_id ?? "";
+  const [tasks] = useRows<{ id: string; title: string }>(`tf-tasks:${clientId}:${keep}`, (s) => {
+    let q = s.from("tasks").select("id,title").order("title").limit(200);
+    q = clientId ? q.eq("client_id", clientId) : q.is("client_id", null);
+    return keep ? q.or(`status.neq.done,id.eq.${keep}`) : q.neq("status", "done");
+  }, []);
   const [date, setDate] = useState(init.date);
   const [start, setStart] = useState(init.start);
   const [end, setEnd] = useState(init.end);
@@ -44,7 +53,7 @@ export default function TimeForm({ entry = {}, clients, onClose, onSaved, tz: zo
     if (minutes <= 0) return toast("Enter how long you worked.");
     if (!start) return toast("Add a start time.");
     setBusy(true);
-    const row = { client_id: clientId || null, started_at: isoAt(date, toMin(start), tz), minutes, note: note.trim() };
+    const row = { client_id: clientId || null, started_at: isoAt(date, toMin(start), tz), minutes, note: note.trim(), ...(taskKnown ? { task_id: taskId || null } : {}) };
     const { error } = entry.id
       ? await supabase().from("time_entries").update(row).eq("id", entry.id)
       : await supabase().from("time_entries").insert({ ...row, source: "manual" });
@@ -72,9 +81,15 @@ export default function TimeForm({ entry = {}, clients, onClose, onSaved, tz: zo
         <h2>{entry.id ? "Edit hours" : "Log time"}</h2>
         <div className="form">
           <div className="field"><label htmlFor="tf-client">Client</label>
-            <select id="tf-client" value={clientId} onChange={(e) => setClientId(e.target.value)}>
+            <select id="tf-client" value={clientId} onChange={(e) => { setClientId(e.target.value); setTaskId(""); setTaskKnown(true); }}>
               <option value="">No client</option>
               {clients.filter((c) => c.status !== "Past" || c.id === clientId).map((c) => <option key={c.id} value={c.id}>{clientLabel(c)}</option>)}
+            </select>
+          </div>
+          <div className="field"><label htmlFor="tf-task">Task</label>
+            <select id="tf-task" value={taskId} onChange={(e) => { setTaskId(e.target.value); setTaskKnown(true); }}>
+              <option value="">No task</option>
+              {(tasks ?? []).map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
             </select>
           </div>
           <div className="field"><label htmlFor="tf-date">Date</label><input id="tf-date" type="date" required value={date} onChange={(e) => setDate(e.target.value)} /></div>

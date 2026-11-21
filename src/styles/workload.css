@@ -1,0 +1,20 @@
+/* Workload: a week heat map of planned vs logged hours per client. */
+.wl-wrap { overflow-x: auto; padding: 0; }
+.wl { width: 100%; min-width: 620px; border-collapse: separate; border-spacing: 4px; font-size: 13px; }
+.wl th { font-weight: 600; text-align: center; color: var(--muted); padding: 6px 4px; }
+.wl thead th small { display: block; font-weight: 400; font-size: 11.5px; }
+.wl thead th.today { color: var(--accent-ink); }
+.wl th[scope="row"] { text-align: left; color: var(--ink); white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis; position: sticky; left: 0; background: var(--card); z-index: 1; }
+.wl th[scope="row"] a { display: inline-flex; align-items: center; gap: 8px; color: inherit; text-decoration: none; min-height: 40px; }
+.wl th[scope="row"] a:hover { text-decoration: underline; }
+.wl th[scope="row"] a i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; }
+.wl td {
+  text-align: center; min-width: 64px; height: 48px; border-radius: 12px; padding: 4px;
+  background: color-mix(in srgb, var(--accent) var(--heat, 0%), var(--tint));
+}
+.wl td > span[aria-hidden] { display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
+.wl td small { color: var(--muted); font-size: 11.5px; }
+.wl tfoot td { background: var(--tint-strong); }
+.wl tfoot td.over { background: color-mix(in srgb, var(--warn) 22%, var(--card)); box-shadow: inset 0 0 0 1px var(--warn); }
+.wl-flag { font-size: 10.5px; font-weight: 700; color: var(--warn); text-transform: uppercase; letter-spacing: .04em; }
+.wl-key { margin: 0; padding: 10px 14px 14px; }

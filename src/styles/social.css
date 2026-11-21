@@ -1,0 +1,145 @@
+/* Social planner: calendar covers, week view, Instagram grid, posting queue, approval links, best time. */
+
+/* ---- Calendar cards ---- */
+.pcard { transition: transform 240ms var(--ml-ease), opacity 160ms var(--ml-ease); }
+.pcard:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pcard.dragging { opacity: .45; }
+.pcard.failed { border-color: var(--plum); background: color-mix(in srgb, var(--plum) 8%, var(--card)); }
+.pcard.failed .pc-status { color: var(--plum); }
+.ccal .pc-media { max-height: 120px; }
+.lane-cell .pc-media { max-height: 190px; }
+.cal-board { display: contents; }
+/* Phones: month cells keep a small cover tile instead of hiding it. */
+@media (max-width: 700px) {
+  .ccal .pcard.has-cover { height: auto; padding: 0; background: none; border: 0; }
+  .ccal .pcard.has-cover > .pc-media { display: block; margin: 0; max-height: none; aspect-ratio: 1; border-radius: 6px; }
+  .ccal .pcard.has-cover .pc-count { display: none; }
+}
+
+/* ---- Week view ---- */
+.wk-board { display: grid; grid-template-columns: repeat(7, minmax(150px, 1fr)); gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+.wk-col { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 10px; min-height: 260px; display: flex; flex-direction: column; gap: 8px; min-width: 0; transition: background 200ms var(--ml-ease); }
+.wk-col.today { border-color: color-mix(in srgb, var(--rose) 70%, var(--line)); background: color-mix(in srgb, var(--blush) 60%, var(--card)); }
+.wk-col.drop { background: color-mix(in srgb, var(--lavender) 70%, var(--card)); outline: 2px dashed var(--lilac); outline-offset: -3px; }
+.wk-h { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.wk-h b { font: 500 15px var(--display); color: var(--ink); }
+.wk-col.today .wk-h b { color: var(--rose-ink); }
+.wk-h .btn { margin-left: auto; min-width: 40px; min-height: 40px; justify-content: center; padding: 0; }
+.wk-col .pcard { padding: 8px 9px; font-size: 12px; gap: 5px; }
+.wk-col .pc-media { max-height: 230px; margin: -3px -4px 3px; }
+@media (max-width: 700px) {
+  .wk-board { grid-template-columns: 1fr; overflow: visible; }
+  .wk-col { min-height: 0; }
+  .wk-col .pcard { flex-direction: column; }
+}
+
+/* ---- Empty states ---- */
+.social-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 28px 18px; }
+.social-empty .btn { margin-top: 4px; min-height: 40px; }
+
+/* ---- Instagram grid ---- */
+.ig-wrap { display: flex; flex-direction: column; gap: 14px; max-width: 620px; width: 100%; margin: 0 auto; }
+.ig-bar { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.ig-bar > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ig-bar b { font: 500 16px var(--display); }
+.ig-toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; min-height: 40px; cursor: pointer; }
+.ig-toggle input { accent-color: var(--accent); width: 16px; height: 16px; }
+.ig-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 3px; overflow: hidden; }
+.ig-tile, .ig-next { position: relative; aspect-ratio: 4 / 5; min-width: 0; }
+.ig-tile:first-child, .ig-next:first-child { border-top-left-radius: calc(var(--r) - 4px); overflow: hidden; }
+.ig-face { position: absolute; inset: 0; overflow: hidden; background: var(--tint-strong); cursor: pointer; border-radius: 4px; }
+.ig-face img, .ig-face video { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 320ms var(--ml-ease); }
+.ig-face:hover img, .ig-face:hover video { transform: scale(1.03); }
+.ig-face:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+.ig-blank { position: absolute; inset: 0; display: grid; place-items: center; padding: 10px; text-align: center; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; background: color-mix(in srgb, var(--lavender) 60%, var(--card)); }
+.ig-badge { position: absolute; top: 6px; right: 6px; font: 500 10.5px var(--font); color: var(--white); background: rgba(0,0,0,.5); padding: 2px 7px; border-radius: 99px; backdrop-filter: blur(4px); }
+.ig-date { position: absolute; left: 6px; bottom: 6px; font: 500 10.5px var(--mono); color: var(--white); background: rgba(0,0,0,.45); padding: 2px 7px; border-radius: 99px; backdrop-filter: blur(4px); }
+.ig-pill { position: absolute; top: 6px; left: 6px; font: 600 10px var(--font); letter-spacing: .02em; padding: 3px 8px; border-radius: 99px; background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.ig-pill.draft { background: color-mix(in srgb, var(--warn) 30%, var(--card)); }
+.ig-pill.approval { background: color-mix(in srgb, var(--lilac) 40%, var(--card)); }
+.ig-pill.scheduled { background: var(--accent); color: var(--on-accent); }
+.ig-pill.posted { background: color-mix(in srgb, var(--good) 35%, var(--card)); }
+.ig-pill.failed { background: var(--plum); color: var(--bg); }
+.ig-grip { position: absolute; right: 4px; bottom: 4px; width: 40px; height: 40px; border-radius: 12px; display: grid; place-content: center; gap: 3px; cursor: grab; touch-action: none; background: color-mix(in srgb, var(--card) 85%, transparent); box-shadow: 0 1px 4px rgba(0,0,0,.14); }
+.ig-grip i { display: block; width: 14px; height: 2px; border-radius: 2px; background: var(--muted); }
+.ig-grip:active { cursor: grabbing; }
+.ig-tile.lifting, .ig-tray-item.lifting { z-index: 20; }
+.ig-tile.lifting .ig-face, .ig-tray-item.lifting .ig-face { transform: scale(1.035); box-shadow: var(--shadow); transition: transform 240ms var(--ml-ease); }
+.ig-tile.drop .ig-face { outline: 3px dashed var(--accent); outline-offset: -3px; }
+.ig-tile.drop .ig-face > :first-child { opacity: .7; }
+.ig-next { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; padding: 10px; font-size: 12px; color: var(--muted); border: 2px dashed var(--line-strong); border-radius: 4px; }
+.ig-next svg { width: 18px; height: 18px; }
+.ig-next small { font: 500 11px var(--mono); }
+.ig-next.drop { border-color: var(--accent); color: var(--ink); background: var(--accent-soft); }
+.ig-tray { background: var(--paper); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.ig-tray h3 { margin: 0; }
+.ig-tray-row { display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 8px; }
+.ig-tray-item { position: relative; flex: none; width: 112px; display: flex; flex-direction: column; gap: 6px; }
+.ig-tray-item .ig-face { position: relative; inset: auto; aspect-ratio: 4 / 5; border-radius: 10px; }
+.ig-tray-item .ig-grip { bottom: auto; top: calc(112px * 1.25 - 44px); }
+.ig-tray-item .btn { justify-content: center; min-height: 40px; }
+
+/* ---- Posting queue ---- */
+.queue { display: flex; flex-direction: column; gap: 12px; }
+.q-list { display: flex; flex-direction: column; gap: 8px; }
+.q-row { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 14px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 10px 12px; }
+.q-row.failed { border-color: color-mix(in srgb, var(--plum) 40%, var(--line)); background: color-mix(in srgb, var(--plum) 6%, var(--card)); }
+.q-cover { all: unset; cursor: pointer; width: 64px; aspect-ratio: 4 / 5; border-radius: 10px; overflow: hidden; background: var(--tint-strong); display: grid; place-items: center; color: var(--muted); }
+.q-cover:focus-visible, .q-title:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.q-cover img, .q-cover video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.q-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.q-title { all: unset; cursor: pointer; font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.q-cap { font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.q-err { font-size: 12.5px; color: var(--plum); }
+.q-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.q-acts { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; max-width: 240px; }
+.q-acts .btn { min-height: 40px; }
+.q-date { border: 1px solid var(--line-strong); background: var(--paper); color: var(--ink); border-radius: 12px; padding: 7px 10px; font: inherit; font-size: 12.5px; min-height: 40px; }
+.q-why { font-size: 11.5px; color: var(--muted); text-align: right; }
+@media (max-width: 640px) {
+  .q-row { grid-template-columns: 56px minmax(0, 1fr); }
+  .q-cover { width: 56px; }
+  .q-acts { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; align-items: center; max-width: none; }
+  .q-why { text-align: left; }
+}
+
+/* ---- Post form: publish problems and approval ---- */
+.pf-failed { background: var(--plum); color: var(--bg); }
+.pub-fail { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; background: color-mix(in srgb, var(--plum) 12%, var(--card)); border: 1px solid color-mix(in srgb, var(--plum) 35%, transparent); color: var(--ink); }
+.pub-fail > div { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; font-size: 13px; }
+.pub-fail b { color: var(--plum); }
+.pub-fail .btn { flex: none; min-height: 40px; }
+.pf-ship { gap: 8px; }
+
+/* ---- Approval link ---- */
+.share-link { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.share-link .btn { min-height: 40px; }
+.share-url { display: flex; gap: 6px; flex: 1 1 280px; min-width: 0; }
+.share-url input { flex: 1; min-width: 0; border: 1px solid var(--line-strong); background: var(--paper); color: var(--ink); border-radius: 12px; padding: 8px 12px; font: 400 12px var(--mono); }
+.share-decision { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; padding: 5px 12px; border-radius: 99px; }
+.share-decision.approved { background: var(--mint); color: var(--mint-ink); }
+.share-decision.changes { background: color-mix(in srgb, var(--honey, var(--warn)) 30%, var(--card)); color: var(--ink); }
+
+/* ---- Best time to post ---- */
+.best-time { display: flex; flex-direction: column; gap: 12px; }
+.bt-empty { display: flex; align-items: center; gap: 14px; }
+.bt-empty p { margin: 0; max-width: 52ch; }
+.bt-line { margin: 0; font: 500 18px var(--display); }
+.bt-strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.bt-strip.six { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.bt-cell { --h: 0; border-radius: 10px; padding: 8px 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; color: var(--muted);
+  background: color-mix(in srgb, var(--accent) calc(var(--h) * 0.38%), var(--tint)); }
+.bt-cell b { font-weight: 600; color: var(--ink); font-size: 12px; }
+.bt-cell span { font-family: var(--mono); }
+.bt-cell.best { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pcard, .wk-col, .ig-face img, .ig-face video, .ig-tile.lifting .ig-face, .ig-tray-item.lifting .ig-face { transition: none; }
+  .ig-face:hover img, .ig-face:hover video { transform: none; }
+}
+
+@media (pointer: coarse) {
+  .wk-h .btn { min-width: 44px; min-height: 44px; }
+  .social-empty .btn, .ig-tray-item .btn, .q-acts .btn, .pub-fail .btn, .share-link .btn, .q-date, .ig-toggle { min-height: 44px; }
+  .ig-toggle input { width: 24px; height: 24px; }
+}

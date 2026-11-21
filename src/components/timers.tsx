@@ -9,10 +9,10 @@ import { clientLabel, type Client } from "@/lib/types";
 import Icon from "./icon";
 import TimeForm, { type TimeDraft } from "./time-form";
 
-type Timer = { id: string; client_id: string | null; note: string; started_at: string };
+export type Timer = { id: string; client_id: string | null; task_id?: string | null; note: string; started_at: string };
 
 export function useTimers() {
-  return useRows<Timer>("timers", (s) => s.from("timers").select("id,client_id,note,started_at").order("started_at"), ["timers"]);
+  return useRows<Timer>("timers", (s) => s.from("timers").select("id,client_id,task_id,note,started_at").order("started_at"), ["timers"]);
 }
 
 function useNow() {
@@ -21,16 +21,17 @@ function useNow() {
   return now;
 }
 
-export async function startTimer(clientId: string | null, note = "") {
-  return supabase().from("timers").insert({ client_id: clientId, note }).select("id,client_id,note,started_at").single();
+export async function startTimer(clientId: string | null, note = "", taskId: string | null = null) {
+  return supabase().from("timers").insert({ client_id: clientId, note, task_id: taskId }).select("id,client_id,task_id,note,started_at").single<Timer>();
 }
 
-// Stopping turns the timer into a time entry for that client, then removes the timer.
+// Stopping turns the timer into a time entry in one database step (stop_timer): the timer is claimed and the
+// entry written together, so a failed step or a second stop can never log the same time twice.
 export async function stopTimer(t: Timer) {
-  const minutes = Math.max(1, Math.round((Date.now() - new Date(t.started_at).getTime()) / 60000));
-  const { data, error } = await supabase().from("time_entries").insert({ client_id: t.client_id, started_at: t.started_at, minutes, note: t.note, source: "timer" }).select("id,client_id,started_at,minutes,note,source").single();
-  if (!error) await supabase().from("timers").delete().eq("id", t.id);
-  return { minutes, entry: data as TimeDraft | null, error };
+  const { data, error } = await supabase().rpc("stop_timer", { p_id: t.id });
+  const entry = data as (TimeDraft & { minutes: number }) | null;
+  const minutes = entry?.minutes ?? Math.max(1, Math.round((Date.now() - new Date(t.started_at).getTime()) / 60000));
+  return { minutes, entry, error };
 }
 
 export function Clock({ since }: { since: string }) {
@@ -58,7 +59,7 @@ export default function Timers({ clients, clientId }: { clients: Client[]; clien
   async function stop(t: Timer) {
     setRows((r) => (r ?? []).filter((x) => x.id !== t.id));
     const { minutes, entry, error } = await stopTimer(t);
-    if (error) { reload(); return toast("Could not save. Check your connection."); }
+    if (error) { reload(); return toast(error.code === "P0002" ? "That timer was already stopped." : "Could not save. Check your connection."); }
     // Over 10 hours usually means the timer was left running. Open the entry so it's easy to fix.
     if (minutes > 600 && entry) { toast(`Saved ${hm(minutes)}. That's long, so fix it if you forgot to stop.`); setFix(entry); }
     else toast(`Saved ${hm(minutes)} to ${label(t.client_id)}`);

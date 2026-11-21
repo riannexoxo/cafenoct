@@ -83,7 +83,7 @@ export default function WorkFiles({ id, kind, files, canva, canvaReady, onChange
         <div className="canva-box">
           {canva.id ? (
             <>
-              {canva.thumb && urls[canva.thumb] ? <img src={urls[canva.thumb]} alt="" className="canva-thumb" /> : <span className="canva-thumb canva-ph">C</span>}
+              {canva.thumb && urls[canva.thumb] ? <img loading="lazy" decoding="async" src={urls[canva.thumb]} alt="" className="canva-thumb" /> : <span className="canva-thumb canva-ph">C</span>}
               <div className="grow" style={{ minWidth: 0 }}>
                 <div className="ellipsis">{canva.title}</div>
                 <div className="small muted">Linked Canva design{canva.pages && canva.pages > 1 ? ` · ${canva.pages} pages` : ""}</div>
@@ -116,7 +116,7 @@ export default function WorkFiles({ id, kind, files, canva, canvaReady, onChange
           {[...files].reverse().map((f) => (
             <div className="file-tile" key={f.path}>
               <button type="button" className="file-prev" onClick={() => setView(f)} aria-label={`View ${f.name}`}>
-                {isImage(f) && urls[f.path] ? <img src={urls[f.path]} alt="" loading="lazy" />
+                {isImage(f) && urls[f.path] ? <img src={urls[f.path]} alt="" loading="lazy" decoding="async" />
                   : isVideo(f) && urls[f.path] ? <video src={urls[f.path]} muted preload="metadata" />
                   : <span className="file-ext">{f.name.split(".").pop()?.toUpperCase()}</span>}
               </button>
@@ -141,7 +141,7 @@ export default function WorkFiles({ id, kind, files, canva, canvaReady, onChange
             <button type="button" className="btn small" onClick={() => { setView(null); setZoom(false); }} aria-label="Close"><Icon name="x" /></button>
           </div>
           <div className="lightbox-body" onClick={(e) => { if (e.target === e.currentTarget) setView(null); }}>
-            {isImage(view) ? <img src={urls[view.path]} alt={view.name} className={zoom ? "zoom" : ""} onClick={() => setZoom(!zoom)} title={zoom ? "Fit to screen" : "View at 100%"} /> : isVideo(view) ? <video src={urls[view.path]} controls autoPlay /> : <iframe src={urls[view.path]} title={view.name} />}
+            {isImage(view) ? <img decoding="async" src={urls[view.path]} alt={view.name} className={zoom ? "zoom" : ""} onClick={() => setZoom(!zoom)} title={zoom ? "Fit to screen" : "View at 100%"} /> : isVideo(view) ? <video src={urls[view.path]} controls autoPlay /> : <iframe src={urls[view.path]} title={view.name} />}
           </div>
         </div>
       )}
@@ -180,7 +180,7 @@ function CanvaPicker({ onClose, onPick }: { onClose: () => void; onPick: (d: Des
         <div className="canva-grid">
           {items.map((d) => (
             <button type="button" key={d.id} className="canva-item" onClick={() => onPick(d)}>
-              {d.thumb ? <img src={d.thumb} alt="" loading="lazy" referrerPolicy="no-referrer" /> : <span className="canva-ph">C</span>}
+              {d.thumb ? <img src={d.thumb} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" /> : <span className="canva-ph">C</span>}
               <span className="ellipsis">{d.title}</span>
             </button>
           ))}

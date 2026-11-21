@@ -1,19 +1,14 @@
-import { brand } from "@/brand";
 import LoginForm from "./login-form";
 
 export const metadata = { title: "Sign in" };
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ invite?: string }> }) {
-  const { invite } = await searchParams;
-  return (
-    <main className="auth-page">
-      <div className="auth-card">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={brand.logo} alt="" className="auth-logo" />
-        <h1>{brand.name}</h1>
-        <p className="muted">{brand.tagline}</p>
-        <LoginForm invite={(invite ?? "").toUpperCase().slice(0, 40)} />
-      </div>
-    </main>
-  );
+const NOTICES: Record<string, string> = {
+  link: "That link has expired or was already used. Ask for a new one below.",
+  reset: "Your password is updated. Sign in with the new one.",
+  signedout: "You're signed out. See you soon.",
+};
+
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ invite?: string; notice?: string }> }) {
+  const { invite, notice } = await searchParams;
+  return <LoginForm invite={(invite ?? "").toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 40)} notice={NOTICES[notice ?? ""] ?? ""} />;
 }

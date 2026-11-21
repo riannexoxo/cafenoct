@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import Link from "next/link";
 import { supabase, useRows } from "@/lib/use-rows";
 import { toast } from "@/lib/toast";
 import { clientLabel, type Client } from "@/lib/types";
 import Seg from "./seg";
 import Icon from "./icon";
+import { MentionList, mentionText, useMentionHits, type Hit } from "./mentions";
 
 type Doc = { id: string; client_id: string | null; title: string; body: string; pinned: boolean; updated_at: string };
 const DOC_COLS = "id,client_id,title,body,pinned,updated_at";
@@ -24,7 +26,8 @@ const TEMPLATES: { name: string; body: string }[] = [
 // --- A small, safe Markdown renderer: headings, lists, checklists, quotes, links, bold and italics. ---
 function inline(text: string, key: string): React.ReactNode[] {
   const out: React.ReactNode[] = [];
-  const re = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\((https?:\/\/[^)\s]+)\)|https?:\/\/[^\s<>()]+)/g;
+  // Links are https, or internal paths starting with a single "/" (no "//" or "/\", which browsers treat as another site).
+  const re = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\((https?:\/\/[^)\s]+|\/(?![/\\])[^)\s\\]*)\)|https?:\/\/[^\s<>()]+)/g;
   let last = 0, m: RegExpExecArray | null, i = 0;
   while ((m = re.exec(text))) {
     if (m.index > last) out.push(text.slice(last, m.index));
@@ -32,6 +35,7 @@ function inline(text: string, key: string): React.ReactNode[] {
     if (t.startsWith("**")) out.push(<b key={k}>{t.slice(2, -2)}</b>);
     else if (t.startsWith("`")) out.push(<code key={k}>{t.slice(1, -1)}</code>);
     else if (t.startsWith("*")) out.push(<em key={k}>{t.slice(1, -1)}</em>);
+    else if (t.startsWith("[") && m[2].startsWith("/")) { const label = t.slice(1, t.indexOf("]")); out.push(<Link key={k} href={m[2]} className={label.startsWith("@") ? "mention" : undefined}>{label}</Link>); }
     else if (t.startsWith("[")) out.push(<a key={k} href={m[2]} target="_blank" rel="noopener noreferrer">{t.slice(1, t.indexOf("]"))}</a>);
     else out.push(<a key={k} href={t} target="_blank" rel="noopener noreferrer">{t}</a>);
     last = m.index + t.length;
@@ -136,6 +140,9 @@ function Editor({ doc, onBack, onChange, onDeleted }: { doc: Doc; onBack: () => 
   const [state, setState] = useState<"saved" | "saving" | "error">("saved");
   const [sure, setSure] = useState(false);
   const area = useRef<HTMLTextAreaElement>(null);
+  const [mention, setMention] = useState<{ at: number; q: string } | null>(null); // "@" typed at body[at]
+  const [active, setActive] = useState(0);
+  const hits = useMentionHits(mention?.q ?? null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latest = useRef({ title, body });
   useEffect(() => { latest.current = { title, body }; });
@@ -163,6 +170,31 @@ function Editor({ doc, onBack, onChange, onDeleted }: { doc: Doc; onBack: () => 
     const s = el.selectionStart, start = body.lastIndexOf("\n", s - 1) + 1;
     setBody(body.slice(0, start) + prefix + body.slice(start)); schedule();
     requestAnimationFrame(() => { el.focus(); el.setSelectionRange(s + prefix.length, s + prefix.length); });
+  };
+  const typed = (v: string, caret: number) => {
+    setBody(v); schedule();
+    const m = v.slice(0, caret).match(/(^|\s)@([^\s@[\]()]{0,30})$/);
+    setMention(m ? { at: caret - m[2].length - 1, q: m[2] } : null); setActive(0);
+  };
+  const pick = (h: Hit) => {
+    const el = area.current; if (!el || !mention) return;
+    const end = el.selectionStart, text = mentionText(h) + " ";
+    setBody(body.slice(0, mention.at) + text + body.slice(end)); schedule(); setMention(null);
+    requestAnimationFrame(() => { el.focus(); el.setSelectionRange(mention.at + text.length, mention.at + text.length); });
+  };
+  const keys = (e: React.KeyboardEvent) => {
+    if (!mention) return;
+    if (e.key === "Escape") { e.preventDefault(); setMention(null); }
+    else if (!hits.length) return;
+    else if (e.key === "ArrowDown") { e.preventDefault(); setActive((a) => (a + 1) % hits.length); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setActive((a) => (a - 1 + hits.length) % hits.length); }
+    else if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); pick(hits[Math.min(active, hits.length - 1)]); }
+  };
+  const startMention = () => {
+    const el = area.current; if (!el) return;
+    const s = el.selectionStart, pre = s && !/\s/.test(body[s - 1]) ? " @" : "@";
+    typed(body.slice(0, s) + pre + body.slice(el.selectionEnd), s + pre.length);
+    requestAnimationFrame(() => { el.focus(); el.setSelectionRange(s + pre.length, s + pre.length); });
   };
   const toggleLine = (n: number) => {
     const ls = body.split("\n");
@@ -207,8 +239,12 @@ function Editor({ doc, onBack, onChange, onDeleted }: { doc: Doc; onBack: () => 
             <button onClick={() => linePrefix("- [ ] ")} title="Checklist">☐</button>
             <button onClick={() => linePrefix("> ")} title="Quote">“</button>
             <button onClick={() => wrap("[", "](https://)", "link text")} title="Link"><Icon name="link" size={14} /></button>
+            <button onClick={startMention} title="Mention a task, client, invoice or post" aria-label="Mention">@</button>
           </div>
-          <textarea ref={area} className="doc-text" value={body} onChange={(e) => { setBody(e.target.value); schedule(); }} placeholder="Start writing. Use the buttons above, or ## for headings, - for bullets and - [ ] for checklists." />
+          <textarea ref={area} className="doc-text" value={body} onChange={(e) => typed(e.target.value, e.target.selectionStart)} onKeyDown={keys} onBlur={() => setMention(null)}
+            aria-autocomplete="list" aria-controls={mention ? "doc-mentions" : undefined} aria-activedescendant={mention && hits.length ? `doc-mentions-${Math.min(active, hits.length - 1)}` : undefined}
+            aria-label="Doc text" placeholder="Start writing. Use the buttons above, or ## for headings, - for bullets, - [ ] for checklists and @ to mention something." />
+          {mention && <MentionList id="doc-mentions" hits={hits} active={Math.min(active, Math.max(0, hits.length - 1))} onPick={pick} />}
         </>
       ) : <div onDoubleClick={() => setMode("write")}><Markdown body={body} onToggle={toggleLine} /></div>}
     </div>

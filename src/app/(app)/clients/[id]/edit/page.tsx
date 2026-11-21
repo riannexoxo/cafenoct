@@ -11,7 +11,7 @@ export default async function EditClient({ params }: { params: Promise<{ id: str
   if (!data) notFound();
   return (
     <>
-      <div className="head"><div><div className="eyebrow">Account settings</div><h1>{data.company || data.name}</h1></div></div>
+      <div className="head"><div><h1>{data.company || data.name}</h1></div></div>
       <ClientForm initial={data} />
     </>
   );

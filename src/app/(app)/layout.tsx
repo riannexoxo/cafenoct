@@ -7,6 +7,11 @@ import FocusRunner from "@/components/focus-runner";
 import DesktopBridge from "@/components/desktop-bridge";
 import Feedback from "@/components/feedback";
 import { ThemeSync } from "@/components/theme-picker";
+import CommandPalette from "@/components/command-palette";
+import Tour from "@/components/tour";
+import PagePose from "@/components/page-pose";
+import Backdrop from "@/components/backdrop";
+import Help from "@/components/help";
 import { getClients, getProfile } from "@/lib/data";
 import { ownerId } from "@/lib/owner";
 
@@ -17,6 +22,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const claims = auth?.claims;
   if (!claims) redirect("/login");
   const [profile, all, owner] = await Promise.all([getProfile(), getClients(), ownerId()]);
+  // A client's own account (invited to a portal) has no workspace of its own: send it to the portal.
+  // Accounts made from a portal invite never get a workspace, even after access is turned off.
+  if (all.length === 0) {
+    if ((claims.app_metadata as { portal?: boolean } | undefined)?.portal) redirect("/portal"); // set by the server only
+    const { data: portals } = await supabase.rpc("portal_clients");
+    if (Array.isArray(portals) && portals.length > 0) redirect("/portal");
+  }
   // New accounts with no clients yet start with the short welcome setup.
   if (!profile?.settings?.onboarded && all.length === 0) redirect("/welcome");
   const clients = all.filter((c) => c.status !== "Past");
@@ -24,6 +36,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!profile) await supabase.from("profiles").insert({ user_id: claims.sub, invoice_email: (claims.email as string) ?? "" });
   return (
     <div className="shell">
+      <Backdrop />
       <Sidebar owner={!!owner} clients={clients ?? []} name={profile?.name || (claims.email as string | undefined)?.split("@")[0] || ""} />
       <main>
         <div className="wrap">{children}</div>
@@ -33,6 +46,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <FocusRunner />
       <DesktopBridge />
       <Feedback />
+      <CommandPalette />
+      <PagePose />
+      <Tour hidden={!!(profile?.settings?.tour as { hidden?: boolean } | undefined)?.hidden} seen={profile?.settings?.tour !== undefined} />
+      <Help />
       <ThemeSync saved={(profile?.settings?.theme as string | undefined) ?? ""} />
     </div>
   );

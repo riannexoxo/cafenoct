@@ -11,8 +11,13 @@ import { toast } from "@/lib/toast";
 import { clientLabel, type Client } from "@/lib/types";
 import InvoiceForm, { type InvoiceDraft } from "./invoice-form";
 import ClientAvatar from "./client-avatar";
+import ExpenseForm, { EXPENSE_COLS, type Expense } from "./expense-form";
+import CountUp from "./count-up";
 import Modal from "./modal";
 import Icon from "./icon";
+import Nocti from "./nocti";
+import Seg from "./seg";
+import "@/styles/money.css";
 
 type Move = { id: string; kind: "convert" | "withdraw"; moved_on: string; from_currency: string; from_amount: number; to_currency: string | null; to_amount: number | null; method: string; note: string };
 type Quote = { name: string; rate: number; fee: number; receive: number };
@@ -37,7 +42,14 @@ function WalletInner({ clients, base, rates, from }: { clients: Client[]; base: 
   const [invoices, reloadInv] = useRows<Invoice>("wallet-inv", (s) => s.from("invoices").select(INVOICE_COLS).order("issue_date", { ascending: false }), ["invoices"]);
   const [moves, reloadMoves] = useRows<Move>("wallet-moves", (s) => s.from("wallet_moves").select("id,kind,moved_on,from_currency,from_amount,to_currency,to_amount,method,note").order("moved_on", { ascending: false }), ["wallet_moves"]);
   const [unbilled] = useRows<Unbilled>("wallet-unbilled", (s) => s.from("time_entries").select("client_id,minutes").is("invoice_id", null), ["time_entries"]);
+  const [expenses, reloadExp] = useRows<Expense>("wallet-exp", (s) => s.from("expenses").select(EXPENSE_COLS).order("spent_on", { ascending: false }).limit(5000), ["expenses"]);
   const [form, setForm] = useState<{ inv: InvoiceDraft; mode: "invoice" | "payment" } | null>(null);
+  const [exp, setExp] = useState<Partial<Expense> | null>(null);
+  const [period, setPeriod] = useState<"month" | "year">("month");
+  const [kind, setKind] = useState("all");
+  const [cat, setCat] = useState("");
+  const [q, setQ] = useState("");
+  const [shown, setShown] = useState(30);
   const [move, setMove] = useState<Partial<Move> | null>(null);
   const [fx, setFx] = useState<Fx | null>(null);
   const [amount, setAmount] = useState("");
@@ -107,30 +119,48 @@ function WalletInner({ clients, base, rates, from }: { clients: Client[]; base: 
 
   // Last 12 months, stacked by client, in your base currency.
   const months = [...Array(12)].map((_, i) => { const d = parseYmd(`${month}-01`); d.setMonth(d.getMonth() - 11 + i); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; });
+  // Expenses use the same conversion to your base currency as income. They don't change the wallet balances above.
+  const ex = expenses ?? [];
+  const spentIn = (m: string) => ex.filter((x) => monthKey(x.spent_on) === m).reduce((a, x) => a + toBase(Number(x.amount), x.currency), 0);
+  const outMonth = spentIn(month), outCount = ex.filter((x) => monthKey(x.spent_on) === month).length;
   const byMonth = months.map((m) => {
     const segs = new Map<string, number>();
     paid.filter((i) => monthKey(paidOn(i)) === m).forEach((i) => segs.set(i.client_id ?? "", (segs.get(i.client_id ?? "") ?? 0) + toBase(received(i), i.currency)));
-    return { m, segs: [...segs.entries()], tot: [...segs.values()].reduce((a, b) => a + b, 0) };
+    return { m, segs: [...segs.entries()], tot: [...segs.values()].reduce((a, b) => a + b, 0), out: spentIn(m) };
   });
   const byClient = new Map<string, number>();
-  paid.filter((i) => paidOn(i).startsWith(year)).forEach((i) => byClient.set(i.client_id ?? "", (byClient.get(i.client_id ?? "") ?? 0) + toBase(received(i), i.currency)));
+  const inPeriod = (i: Invoice) => (period === "month" ? monthKey(paidOn(i)) === month : paidOn(i).startsWith(year));
+  paid.filter(inPeriod).forEach((i) => byClient.set(i.client_id ?? "", (byClient.get(i.client_id ?? "") ?? 0) + toBase(received(i), i.currency)));
   const ranked = [...byClient.entries()].sort((a, b) => b[1] - a[1]);
+  const periodTotal = period === "month" ? inMonth : inYear;
 
-  // Everything that happened, newest first.
-  type Act = { key: string; date: string; kind: "in" | "wait" | "move"; title: string; detail: string; amount: string; tone: string; open: () => void; clientId?: string | null };
+  // Expected income: sent invoices by due date, then drafts that haven't gone out yet.
+  const daysTo = (d: string) => Math.round((parseYmd(d).getTime() - parseYmd(t).getTime()) / 864e5);
+  const expected = [...waitingList].sort((a, b) => (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"));
+  const drafts = inv.filter((i) => i.status === "draft");
+
+  // Every transaction, newest first: money in, conversions, withdrawals and expenses.
+  type Act = { key: string; date: string; kind: "in" | "move" | "out"; type: string; category: string; title: string; detail: string; amount: string; tone: string; open: () => void; receipt?: boolean };
   const acts: Act[] = [
-    ...paid.map((i): Act => ({ key: i.id, date: paidOn(i), kind: "in", title: label(i.client_id), detail: [i.number, i.method && `via ${i.method}`].filter(Boolean).join(" · "), amount: `+${money(received(i), i.currency)}`, tone: "good", clientId: i.client_id, open: () => setForm({ mode: i.number.startsWith("PAY") ? "payment" : "invoice", inv: i }) })),
-    ...waitingList.map((i): Act => ({ key: i.id, date: i.issue_date, kind: "wait", title: label(i.client_id), detail: `${i.number} · ${isOverdue(i, t) ? "overdue" : i.due_date ? `due ${shortDate(i.due_date)}` : "sent"}`, amount: money(total(i), i.currency), tone: isOverdue(i, t) ? "bad" : "warn", clientId: i.client_id, open: () => setForm({ mode: "invoice", inv: i }) })),
-    ...mv.map((m): Act => ({ key: m.id, date: m.moved_on, kind: "move", title: m.kind === "convert" ? `Converted to ${m.to_currency}` : "Withdrew", detail: [m.method, m.note].filter(Boolean).join(" · "), amount: m.kind === "convert" ? `${money(Number(m.from_amount), m.from_currency)} → ${money(Number(m.to_amount), m.to_currency ?? "PHP")}` : `−${money(Number(m.from_amount), m.from_currency)}`, tone: "", open: () => setMove(m) })),
-  ].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 25);
+    ...paid.map((i): Act => ({ key: i.id, date: paidOn(i), kind: "in", type: "income", category: "Income", title: label(i.client_id), detail: [i.number, i.method && `via ${i.method}`].filter(Boolean).join(" · "), amount: `+${money(received(i), i.currency)}`, tone: "good", open: () => setForm({ mode: i.number.startsWith("PAY") ? "payment" : "invoice", inv: i }) })),
+    ...mv.map((m): Act => ({ key: m.id, date: m.moved_on, kind: "move", type: m.kind, category: m.kind === "convert" ? "Convert" : "Withdraw", title: m.kind === "convert" ? `Converted to ${m.to_currency}` : "Withdrew", detail: [m.method, m.note].filter(Boolean).join(" · "), amount: m.kind === "convert" ? `${money(Number(m.from_amount), m.from_currency)} → ${money(Number(m.to_amount), m.to_currency ?? "PHP")}` : `−${money(Number(m.from_amount), m.from_currency)}`, tone: "", open: () => setMove(m) })),
+    ...ex.map((x): Act => ({ key: x.id, date: x.spent_on, kind: "out", type: "expense", category: x.category, title: x.vendor || x.category, detail: [x.vendor ? x.category : "", x.client_id ? label(x.client_id) : "", x.note].filter(Boolean).join(" · "), amount: `−${money(Number(x.amount), x.currency)}`, tone: "bad", receipt: !!x.receipt_path, open: () => setExp(x) })),
+  ].sort((a, b) => b.date.localeCompare(a.date));
+  const cats = [...new Set(ex.map((x) => x.category))].sort();
+  const needle = q.trim().toLowerCase();
+  const txs = acts.filter((a) => (kind === "all" || a.type === kind) && (kind !== "expense" || !cat || a.category === cat) && (!needle || `${a.title} ${a.detail} ${a.category} ${a.amount}`.toLowerCase().includes(needle)));
+  const filterTx = (f: () => void) => { f(); setShown(30); };
 
-  const loading = !invoices || !moves;
+  const loading = !invoices || !moves || !expenses;
+  const monthName = parseYmd(`${month}-01`).toLocaleDateString("en-US", { month: "long" });
+  const fmt = (n: number) => money(Math.round(n * 100) / 100, base);
   const change = lastMonth ? Math.round(((inMonth - lastMonth) / lastMonth) * 100) : null;
 
   return (
     <>
       <div className="row" style={{ justifyContent: "flex-end", marginTop: -8 }}>
         <button className="btn" onClick={() => setMove({ kind: "convert", from_currency: "USD", to_currency: "PHP" })}><Icon name="repeat" />Convert</button>
+        <button className="btn" onClick={() => setExp({})}><Icon name="coin" />Add expense</button>
         <button className="btn" onClick={() => setForm({ mode: "invoice", inv: {} })}><Icon name="file" />New invoice</button>
         <button className="btn solid" onClick={() => setForm({ mode: "payment", inv: {} })}><Icon name="plus" />Money received</button>
       </div>
@@ -156,16 +186,18 @@ function WalletInner({ clients, base, rates, from }: { clients: Client[]; base: 
         </div>
       </div>
 
-      <div className="stats">
-        <div className="stat"><span className="k">Received in {parseYmd(`${month}-01`).toLocaleDateString("en-US", { month: "long" })}</span><span className="v">{money(inMonth, base)}</span><span className="s">{change === null ? "this month" : `${change >= 0 ? "+" : ""}${change}% vs last month`}</span></div>
-        <div className="stat"><span className="k">This year</span><span className="v">{money(inYear, base)}</span><span className="s">≈ {money(inYear * php, "PHP")}</span></div>
-        <div className="stat"><span className="k">Waiting on</span><span className="v">{money(waiting, base)}</span><span className="s">{waitingList.length} invoice{waitingList.length === 1 ? "" : "s"} sent</span></div>
-        <div className="stat"><span className="k">Ready to bill</span><span className="v">{money(unbilledWorth, base)}</span><span className="s">unbilled hours</span></div>
+      <div className="stats money-stats" aria-busy={loading}>
+        <div className="stat"><span className="k">Income in {monthName}</span><span className="v"><CountUp value={inMonth} format={fmt} /></span><span className={`s${change === null ? "" : change >= 0 ? " good-t" : " bad-t"}`}>{change === null ? `${money(lastMonth, base)} last month` : `${change >= 0 ? "+" : ""}${change}% vs last month (${money(lastMonth, base)})`}</span></div>
+        <div className="stat"><span className="k">Expenses in {monthName}</span><span className="v"><CountUp value={outMonth} format={fmt} /></span><span className="s">{outCount} expense{outCount === 1 ? "" : "s"}</span></div>
+        <div className="stat"><span className="k">Net in {monthName}</span><span className={`v${inMonth - outMonth < 0 ? " bad-t" : ""}`}><CountUp value={inMonth - outMonth} format={fmt} /></span><span className="s">income minus expenses</span></div>
+        <div className="stat"><span className="k">This year</span><span className="v"><CountUp value={inYear} format={fmt} /></span><span className="s">≈ {money(inYear * php, "PHP")}</span></div>
+        <div className="stat"><span className="k">Waiting on</span><span className="v"><CountUp value={waiting} format={fmt} /></span><span className="s">{waitingList.length} invoice{waitingList.length === 1 ? "" : "s"} sent</span></div>
+        <div className="stat"><span className="k">Ready to bill</span><span className="v"><CountUp value={unbilledWorth} format={fmt} /></span><span className="s">unbilled hours</span></div>
       </div>
 
       <div className="grid g2" style={{ gridTemplateColumns: "1.6fr 1fr", alignItems: "start" }}>
         <div className="card">
-          <h3><span>Money in, last 12 months</span><span className="muted num">{money(byMonth.reduce((a, x) => a + x.tot, 0), base)}</span></h3>
+          <h3><span>In and out, last 12 months</span><span className="muted num">{money(byMonth.reduce((a, x) => a + x.tot, 0), base)} in</span></h3>
           <IncomeChart data={byMonth} color={color} label={label} base={base} current={month} />
         </div>
         <div className="card">
@@ -190,7 +222,7 @@ function WalletInner({ clients, base, rates, from }: { clients: Client[]; base: 
 
       <div className="grid g2" style={{ alignItems: "start" }}>
         <div className="card">
-          <h3><span>By client in {year}</span></h3>
+          <h3><span>By client</span><Seg label="Period" options={[["month", monthName], ["year", year]]} value={period} onChange={setPeriod} /></h3>
           {ranked.length ? <div className="list">{ranked.map(([id, v]) => {
             const c = client(id || null);
             const row = (
@@ -198,28 +230,73 @@ function WalletInner({ clients, base, rates, from }: { clients: Client[]; base: 
                 <div className="row" style={{ flexWrap: "nowrap" }}>
                   {c ? <ClientAvatar c={c} size={26} /> : <span className="cdot" style={{ background: color(null) }} />}
                   <span className="grow" style={{ minWidth: 0, overflowWrap: "anywhere" }}>{label(id || null)}</span>
-                  <span className="num small">{money(v, base)} <span className="muted">· {Math.round((v / inYear) * 100)}%</span></span>
+                  <span className="num small">{money(v, base)} <span className="muted">· {Math.round((v / periodTotal) * 100)}%</span></span>
                 </div>
                 <div className="bar"><i style={{ width: `${(v / ranked[0][1]) * 100}%`, background: color(id || null) }} /></div>
               </>
             );
             const style = { flexDirection: "column", alignItems: "stretch", gap: 6 } as const;
             return c ? <Link key={id} href={`/clients/${c.id}/invoices`} className="li click" style={style}>{row}</Link> : <div key="other" className="li" style={style}>{row}</div>;
-          })}</div> : <div className="empty"><b>Nothing received yet this year</b><span>Mark an invoice paid or record money received and it shows up here.</span></div>}
+          })}</div> : <div className="empty"><Nocti size={64} /><b>Nothing received {period === "month" ? `in ${monthName}` : `in ${year}`} yet</b><button className="btn solid small" onClick={() => setForm({ mode: "payment", inv: {} })}><Icon name="plus" />Money received</button></div>}
         </div>
         <div className="card">
-          <h3><span>Activity</span></h3>
-          {acts.length ? <div className="list">{acts.map((a) => (
-            <button key={a.key} className="li click act" onClick={a.open}>
-              <span className={`act-ico ${a.kind}`} aria-hidden="true">{a.kind === "in" ? <Icon name="plus" size={14} /> : a.kind === "wait" ? <Icon name="schedule" size={14} /> : <Icon name="repeat" size={14} />}</span>
-              <span className="t">{a.title}<small>{shortDate(a.date)}{a.detail ? ` · ${a.detail}` : ""}</small></span>
-              <span className={`num small ${a.tone ? `${a.tone}-t` : ""}`}>{a.amount}</span>
-            </button>
-          ))}</div> : <div className="empty"><b>No activity yet</b><span>Payments, invoices waiting to be paid and conversions show here.</span></div>}
+          <h3><span>Expected income</span><span className="muted num">{money(waiting, base)}</span></h3>
+          {expected.length ? <div className="list">{expected.map((i) => {
+            const d = i.due_date ? daysTo(i.due_date) : null, late = isOverdue(i, t);
+            return (
+              <button key={i.id} className={`li click act due${late ? " late" : d !== null && d <= 7 ? " soon" : ""}`} onClick={() => setForm({ mode: "invoice", inv: i })}>
+                <span className="t">{label(i.client_id)}<small>{i.number}{i.due_date ? ` · due ${shortDate(i.due_date)}` : " · no due date"}</small></span>
+                <span className="due-r"><span className="num small">{money(total(i), i.currency)}</span>
+                  {late ? <span className="pill due-pill late">{-d!} day{d === -1 ? "" : "s"} overdue</span> : d !== null && d <= 7 ? <span className="pill due-pill soon">{d === 0 ? "Due today" : `Due in ${d} day${d === 1 ? "" : "s"}`}</span> : null}
+                </span>
+              </button>
+            );
+          })}</div> : <div className="empty"><Nocti size={64} /><b>No invoices waiting to be paid</b><button className="btn solid small" onClick={() => setForm({ mode: "invoice", inv: {} })}><Icon name="file" />New invoice</button></div>}
+          {drafts.length > 0 && (
+            <>
+              <p className="eyebrow drafts-h">Not sent yet</p>
+              <div className="list">{drafts.map((i) => (
+                <button key={i.id} className="li click act" onClick={() => setForm({ mode: "invoice", inv: i })}>
+                  <span className="t">{label(i.client_id)}<small>{i.number} · draft from {shortDate(i.issue_date)}</small></span>
+                  <span className="num small muted">{money(total(i), i.currency)}</span>
+                </button>
+              ))}</div>
+            </>
+          )}
         </div>
       </div>
 
+      <div className="card">
+        <h3><span>Transactions</span><span className="muted">{txs.length}</span></h3>
+        <div className="tx-bar">
+          <input type="search" className="search grow" placeholder="Search client, vendor, note…" aria-label="Search transactions" value={q} onChange={(e) => filterTx(() => setQ(e.target.value))} />
+          <select className="search" aria-label="Type" value={kind} onChange={(e) => filterTx(() => { setKind(e.target.value); setCat(""); })}>
+            <option value="all">Everything</option><option value="income">Income</option><option value="expense">Expenses</option><option value="convert">Conversions</option><option value="withdraw">Withdrawals</option>
+          </select>
+          {kind === "expense" && cats.length > 1 && (
+            <select className="search" aria-label="Expense category" value={cat} onChange={(e) => filterTx(() => setCat(e.target.value))}>
+              <option value="">All categories</option>{cats.map((c) => <option key={c}>{c}</option>)}
+            </select>
+          )}
+        </div>
+        {txs.length ? (
+          <>
+            <div className="list">{txs.slice(0, shown).map((a) => (
+              <button key={a.key} className="li click act" onClick={a.open}>
+                <span className={`act-ico ${a.kind}`} aria-hidden="true">{a.kind === "in" ? <Icon name="plus" size={14} /> : a.kind === "out" ? <Icon name="coin" size={14} /> : <Icon name="repeat" size={14} />}</span>
+                <span className="t">{a.title}<small>{shortDate(a.date)}{a.detail ? ` · ${a.detail}` : ""}{a.receipt ? " · receipt" : ""}</small></span>
+                <span className="tx-cat pill">{a.category}</span>
+                <span className={`num small ${a.tone ? `${a.tone}-t` : ""}`}>{a.amount}</span>
+              </button>
+            ))}</div>
+            {txs.length > shown && <button className="btn small tx-more" onClick={() => setShown((n) => n + 30)}>Show more ({txs.length - shown} left)</button>}
+          </>
+        ) : acts.length ? <div className="empty"><b>Nothing matches</b><button className="btn small" onClick={() => filterTx(() => { setQ(""); setKind("all"); setCat(""); })}>Clear filters</button></div>
+          : <div className="empty"><Nocti size={64} /><b>No transactions yet</b><button className="btn solid small" onClick={() => setExp({})}><Icon name="coin" />Add expense</button></div>}
+      </div>
+
       {form && <InvoiceForm inv={form.inv} mode={form.mode} clients={clients} existing={inv} from={from} onClose={() => setForm(null)} onSaved={reloadInv} />}
+      {exp && <ExpenseForm expense={exp} clients={clients} base={base} onClose={() => setExp(null)} onSaved={reloadExp} />}
       {move && <MoveForm move={move} fx={fx ? { ...fx, quotes } : null} balances={bal} onClose={() => setMove(null)} onSaved={reloadMoves} />}
     </>
   );
@@ -244,27 +321,48 @@ function Spark({ history, live }: { history: { date: string; rate: number }[]; l
   );
 }
 
-function IncomeChart({ data, color, label, base, current }: { data: { m: string; segs: [string, number][]; tot: number }[]; color: (id: string | null) => string; label: (id: string | null) => string; base: string; current: string }) {
+// Money in (stacked by client) and expenses, per month, with the same numbers as a table.
+function IncomeChart({ data, color, label, base, current }: { data: { m: string; segs: [string, number][]; tot: number; out: number }[]; color: (id: string | null) => string; label: (id: string | null) => string; base: string; current: string }) {
+  const [table, setTable] = useState(false);
   const W = 640, H = 220, P = { l: 44, r: 8, t: 12, b: 26 };
-  const max = Math.max(...data.map((x) => x.tot), 1);
+  const max = Math.max(...data.map((x) => Math.max(x.tot, x.out)), 1);
   const step = [50, 100, 250, 500, 1000, 2500, 5000].find((s) => max / s <= 5) ?? 10000;
   const top = Math.ceil(max / step) * step || step;
   const y = (v: number) => P.t + (H - P.t - P.b) * (1 - v / top);
   const bw = (W - P.l - P.r) / data.length;
+  const mon = (m: string, f: "short" | "long" = "short") => parseYmd(`${m}-01`).toLocaleDateString("en-US", f === "long" ? { month: "long", year: "numeric" } : { month: "short" });
   return (
-    <svg className="chart week-chart" viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Money received per month">
-      {[...Array(Math.round(top / step) + 1)].map((_, i) => <g key={i}><line className="gl" x1={P.l} x2={W - P.r} y1={y(i * step)} y2={y(i * step)} /><text x={P.l - 6} y={y(i * step) + 3} textAnchor="end">{money(i * step, base).replace(".00", "")}</text></g>)}
-      {data.map((x, i) => {
-        const cx = P.l + i * bw + bw * 0.2, w = bw * 0.6;
-        let acc = 0;
-        return (
-          <g key={x.m} style={{ ["--i" as string]: i }}>
-            {x.segs.map(([id, v]) => { const a = acc; acc += v; return <rect key={id} className="bv" x={cx} y={y(acc)} width={w} height={Math.max(0, y(a) - y(acc))} rx={3} fill={color(id || null)}><title>{`${label(id || null)}: ${money(v, base)}`}</title></rect>; })}
-            <text x={cx + w / 2} y={H - 8} textAnchor="middle" style={x.m === current ? { fill: "var(--ink)" } : undefined}>{parseYmd(`${x.m}-01`).toLocaleDateString("en-US", { month: "short" })}</text>
-          </g>
-        );
-      })}
-    </svg>
+    <>
+      <div className="chart-bar">
+        <div className="legend"><span><i className="lg money-in" />Money in</span><span><i className="lg money-out" />Expenses</span></div>
+        <button type="button" className="btn small ghost" aria-pressed={table} onClick={() => setTable((v) => !v)}>{table ? "Show chart" : "Show as table"}</button>
+      </div>
+      {table ? (
+        <div className="table-wrap">
+          <table>
+            <caption className="sr-only">Money in and expenses per month, in {base}</caption>
+            <thead><tr><th>Month</th><th className="r">In</th><th className="r">Expenses</th><th className="r">Net</th></tr></thead>
+            <tbody>{[...data].reverse().map((x) => <tr key={x.m}><td>{mon(x.m, "long")}</td><td className="r num">{money(x.tot, base)}</td><td className="r num">{money(x.out, base)}</td><td className={`r num${x.tot - x.out < 0 ? " bad-t" : ""}`}>{money(x.tot - x.out, base)}</td></tr>)}</tbody>
+          </table>
+        </div>
+      ) : (
+        <svg className="chart week-chart" viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-labelledby="inout-title">
+          <title id="inout-title">{`Money in and expenses per month, last 12 months, in ${base}. Use "Show as table" for the numbers.`}</title>
+          {[...Array(Math.round(top / step) + 1)].map((_, i) => <g key={i}><line className="gl" x1={P.l} x2={W - P.r} y1={y(i * step)} y2={y(i * step)} /><text x={P.l - 6} y={y(i * step) + 3} textAnchor="end">{money(i * step, base).replace(".00", "")}</text></g>)}
+          {data.map((x, i) => {
+            const cx = P.l + i * bw + bw * 0.14, w = bw * 0.44, ox = cx + w + bw * 0.04, ow = bw * 0.24;
+            let acc = 0;
+            return (
+              <g key={x.m} style={{ ["--i" as string]: i }}>
+                {x.segs.map(([id, v]) => { const a = acc; acc += v; return <rect key={id} className="bv" x={cx} y={y(acc)} width={w} height={Math.max(0, y(a) - y(acc))} rx={3} fill={color(id || null)}><title>{`${label(id || null)}: ${money(v, base)}`}</title></rect>; })}
+                {x.out > 0 && <rect className="bv bout" x={ox} y={y(x.out)} width={ow} height={Math.max(0, y(0) - y(x.out))} rx={3}><title>{`Expenses: ${money(x.out, base)}`}</title></rect>}
+                <text x={cx + (w + ow) / 2} y={H - 8} textAnchor="middle" style={x.m === current ? { fill: "var(--ink)" } : undefined}>{mon(x.m)}</text>
+              </g>
+            );
+          })}
+        </svg>
+      )}
+    </>
   );
 }
 

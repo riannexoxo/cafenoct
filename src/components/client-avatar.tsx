@@ -5,7 +5,7 @@ export default function ClientAvatar({ c, size, className = "avatar" }: { c: Pic
   const style: React.CSSProperties = size ? { width: size, height: size, fontSize: Math.round(size * 0.4), borderRadius: Math.round(size * 0.34) } : {};
   if (c.logo_url) return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={c.logo_url} alt="" className={`${className} has-logo`} style={style} />
+    <img loading="lazy" decoding="async" src={c.logo_url} alt="" className={`${className} has-logo`} style={style} />
   );
   return <span className={className} style={{ ...style, background: c.color }} aria-hidden="true">{clientLabel(c)[0]?.toUpperCase()}</span>;
 }

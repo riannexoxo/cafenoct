@@ -12,7 +12,6 @@ export default async function WalletPage() {
     <>
       <div className="head">
         <div>
-          <div className="eyebrow">Your wallet</div>
           <h1>Wallet</h1>
           <p>Everything that comes in from your clients, in dollars and pesos.</p>
         </div>

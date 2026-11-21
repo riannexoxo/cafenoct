@@ -10,9 +10,14 @@ import { toast } from "@/lib/toast";
 import { clientLabel, type Client } from "@/lib/types";
 import Modal from "./modal";
 import Icon from "./icon";
+import CommentThread from "./comment-thread";
+import { Empty } from "./views/shared";
+import "@/styles/views.css";
 
 const noop = () => () => {};
 type Count = { project_id: string | null; status: string };
+type Update = { id: string; project_id: string; state: "on_track" | "at_risk" | "off_track"; body: string; created_at: string };
+const STATES: [Update["state"], string, string][] = [["on_track", "On track", "good"], ["at_risk", "At risk", "warn"], ["off_track", "Off track", "bad"]];
 const short = (d: string | null) => (d ? parseYmd(d).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "");
 
 // Projects with progress. New ones can start from a template for the role, with every step ready.
@@ -33,6 +38,7 @@ function List({ clients, clientId }: { clients: Client[]; clientId?: string }) {
     if (clientId) q = q.eq("client_id", clientId);
     return q;
   }, ["tasks"]);
+  const [updates, reloadUpdates] = useRows<Update>("project-updates", (s) => s.from("project_updates").select("id,project_id,state,body,created_at").order("created_at", { ascending: false }).limit(500), ["project_updates"]);
   const [form, setForm] = useState<Partial<Project> | null>(null);
   const [showDone, setShowDone] = useState(false);
   const all = projects ?? [];
@@ -57,6 +63,7 @@ function List({ clients, clientId }: { clients: Client[]; clientId?: string }) {
           <div className="bar" style={{ marginTop: 6 }}><i style={{ width: `${pct}%`, background: "var(--c)" }} /></div>
           <span className="small row" style={{ justifyContent: "space-between" }}><span className="muted">{pr.done}/{pr.total} steps · {pct}%</span>{p.due_date && <span className={late ? "bad-t" : "muted"}>Due {short(p.due_date)}</span>}</span>
         </Link>
+        <StatusBox projectId={p.id} latest={(updates ?? []).find((u) => u.project_id === p.id)} onSaved={reloadUpdates} />
       </div>
     );
   };
@@ -68,7 +75,7 @@ function List({ clients, clientId }: { clients: Client[]; clientId?: string }) {
         <button className="btn solid" onClick={() => setForm({ client_id: clientId ?? null, status: "Active", start_date: today() })}><Icon name="plus" />New project</button>
       </div>
       {projects === null ? <div className="card skel" style={{ height: 200 }} /> : active.length ? <div className="proj-grid">{active.map(card)}</div> : (
-        <div className="card empty"><b>No projects yet</b><span>Start one from a template: every step is added to your Work board with a due date.</span><button className="btn small" onClick={() => setForm({ client_id: clientId ?? null, status: "Active", start_date: today() })}><Icon name="plus" />New project</button></div>
+        <div className="card"><Empty line="No projects yet. Start one from a template and every step lands on your Work board." action="New project" onAction={() => setForm({ client_id: clientId ?? null, status: "Active", start_date: today() })} /></div>
       )}
       {finished.length > 0 && (
         <>
@@ -148,6 +155,7 @@ function ProjectForm({ p, clients, onClose, onSaved }: { p: Partial<Project>; cl
           {p.id && <div className="field"><label htmlFor="pj-status">Status</label><select id="pj-status" value={status} onChange={(e) => setStatus(e.target.value as Project["status"])}><option>Active</option><option>On hold</option><option>Done</option></select></div>}
           {(p.id || !tpl) && <div className="field full"><label htmlFor="pj-desc">Description</label><textarea id="pj-desc" value={desc} onChange={(e) => setDesc(e.target.value)} style={{ minHeight: 70 }} /></div>}
         </div>
+        {p.id && <CommentThread entity="project" entityId={p.id} clientId={p.client_id ?? null} />}
         <div className="modal-foot">
           {p.id && <button type="button" className="btn danger left" onClick={remove}>{sure ? "Tap again to delete" : "Delete"}</button>}
           <button type="button" className="btn" onClick={onClose}>Cancel</button>
@@ -155,5 +163,44 @@ function ProjectForm({ p, clients, onClose, onSaved }: { p: Partial<Project>; cl
         </div>
       </form>
     </Modal>
+  );
+}
+
+// The latest status update for a project (on track, at risk, off track) and a quick way to post a new one.
+function StatusBox({ projectId, latest, onSaved }: { projectId: string; latest?: Update; onSaved: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [state, setState] = useState<Update["state"]>(latest?.state ?? "on_track");
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+  const cur = latest && STATES.find((x) => x[0] === latest.state);
+  async function post(e: React.FormEvent) {
+    e.preventDefault();
+    if (body.trim().length > 280) return toast("Keep the note short (280 characters).");
+    setBusy(true);
+    const { error } = await supabase().from("project_updates").insert({ project_id: projectId, state, body: body.trim() });
+    setBusy(false);
+    if (error) return toast("Could not post the update. Try again.");
+    toast("Status updated");
+    setBody(""); setOpen(false); onSaved();
+  }
+  if (open) return (
+    <form className="vupd" onSubmit={post}>
+      <div className="row" style={{ gap: 6 }} role="radiogroup" aria-label="How is it going?">
+        {STATES.map(([k, l, tone]) => <button key={k} type="button" role="radio" aria-checked={state === k} className={`pill ${state === k ? tone : ""} vupd-opt`} onClick={() => setState(k)}>{l}</button>)}
+      </div>
+      <input value={body} maxLength={280} onChange={(e) => setBody(e.target.value)} placeholder="One line on how it's going" aria-label="Status note" />
+      <div className="row" style={{ gap: 6, justifyContent: "flex-end" }}>
+        <button type="button" className="btn small ghost" onClick={() => setOpen(false)}>Cancel</button>
+        <button type="submit" className="btn small solid" disabled={busy}>{busy ? "Posting…" : "Post update"}</button>
+      </div>
+    </form>
+  );
+  return (
+    <div className="vupd">
+      {cur ? (
+        <div className="vupd-cur"><span className={`pill ${cur[2]}`}>{cur[1]}</span><span className="small muted">{new Date(latest!.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>{latest!.body && <span className="small vupd-note">{latest!.body}</span>}</div>
+      ) : <span className="small muted">No status update yet</span>}
+      <button type="button" className="btn small ghost" onClick={() => { setState(latest?.state ?? "on_track"); setOpen(true); }}>Update</button>
+    </div>
   );
 }

@@ -10,7 +10,6 @@ export default async function MyCalendar() {
     <>
       <div className="head">
         <div>
-          <div className="eyebrow">Your schedule</div>
           <h1>My calendar</h1>
           <p>Everything in your time. Each client&apos;s usual hours are converted from their time zone.</p>
         </div>

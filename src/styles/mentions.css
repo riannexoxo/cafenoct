@@ -1,0 +1,10 @@
+/* @mentions in docs: the picker under the editor and the chips in the rendered doc. */
+.mn-list { list-style: none; margin: 6px 0 0; padding: 4px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); box-shadow: var(--shadow); max-height: 240px; overflow-y: auto; }
+.mn-list li { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 6px 10px; border-radius: 10px; cursor: pointer; }
+.mn-list li.on, .mn-list li:hover { background: var(--tint-strong); }
+.mn-list .mn-l { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mn-list .mn-none { cursor: default; }
+.mn-list .mn-none:hover { background: none; }
+.doc-body a.mention { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 99px; background: color-mix(in srgb, var(--accent) 12%, var(--card)); color: var(--accent-ink); text-decoration: none; font-weight: 600; }
+.doc-body a.mention:hover { background: color-mix(in srgb, var(--accent) 20%, var(--card)); }
+.doc-body a.mention:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

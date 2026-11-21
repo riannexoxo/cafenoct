@@ -9,7 +9,6 @@ export default async function Content() {
     <>
       <div className="head">
         <div>
-          <div className="eyebrow">Social media</div>
           <h1>Content calendar</h1>
           <p>Every post for every social media client, from idea to posted.</p>
         </div>

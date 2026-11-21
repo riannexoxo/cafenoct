@@ -9,6 +9,7 @@ import { clientLabel, type Client } from "@/lib/types";
 import PostForm, { type PostDraft } from "./post-form";
 import MediaThumb from "./media-thumb";
 import Seg from "./seg";
+import BestTime from "./best-time";
 
 const noop = () => () => {};
 type Range = "30" | "90" | "year";
@@ -120,6 +121,7 @@ function Inner({ clients, clientId }: { clients: Client[]; clientId?: string }) 
         <div className="card"><h3><span>By format</span></h3>{bars(rows(byFormat), "See whether reels, carousels or single images work best.")}<div className="legend">{Object.entries(FORMAT_TONES).filter(([f]) => byFormat.has(f)).map(([f, c]) => <span key={f}><i className="fmtl" style={{ background: c }} />{f}</span>)}</div></div>
       </div>
       {byPillar.size > 0 && <div className="card"><h3><span>By content pillar</span></h3>{bars(rows(byPillar), "")}</div>}
+      <BestTime clientId={who} platform={only} />
 
       <div className="card">
         <h3><span>Top posts</span><Seg label="Sort" options={[["rate", "Engagement"], ["views", "Views"]]} value={sort} onChange={setSort} /></h3>

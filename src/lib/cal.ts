@@ -5,7 +5,7 @@ import type { Client } from "@/lib/types";
 
 export const HH = 48; // pixels per hour on the calendar grid
 
-export type TimeEntry = { id: string; client_id: string | null; started_at: string; minutes: number; note: string; source: string };
+export type TimeEntry = { id: string; client_id: string | null; started_at: string; minutes: number; note: string; source: string; task_id?: string | null; invoice_id?: string | null };
 export type CalEvent = {
   id: string; client_id: string | null; title: string; starts_at: string; ends_at: string; notes: string;
   kind: "block" | "meeting"; link: string; repeat: "none" | "daily" | "weekdays" | "weekly" | "monthly";

@@ -10,9 +10,12 @@ import { celebrate } from "@/lib/celebrate";
 import { clientLabel, type Client } from "@/lib/types";
 import Modal from "./modal";
 import Icon from "./icon";
+import CommentThread from "./comment-thread";
+import TemplatePicker, { list, num, obj, str } from "./template-picker";
+import RemindButton from "./remind-button";
 
 export type InvoiceDraft = Partial<Invoice> & { entryIds?: string[]; markPaid?: boolean };
-const CURRENCIES = ["USD", "PHP", "AUD", "CAD", "GBP", "EUR", "NZD", "SGD"];
+export const CURRENCIES = ["USD", "PHP", "AUD", "CAD", "GBP", "EUR", "NZD", "SGD"];
 
 // Create or edit an invoice. "payment" mode is a quick way to record money received without an invoice.
 export default function InvoiceForm({ inv = {}, mode = "invoice", clients, existing, from, onClose, onSaved }: {
@@ -58,7 +61,10 @@ export default function InvoiceForm({ inv = {}, mode = "invoice", clients, exist
       : await supabase().from("invoices").insert(r).select("id").single();
     if (res.error || !res.data) { setBusy(false); return toast(/unique|duplicate/i.test(res.error?.message ?? "") ? "That invoice number is already used." : "Could not save. Check your connection."); }
     // Hours that went into this invoice are marked as billed so they aren't invoiced twice.
-    if (inv.entryIds?.length) await supabase().from("time_entries").update({ invoice_id: res.data.id }).in("id", inv.entryIds);
+    if (inv.entryIds?.length) {
+      const marked = await supabase().from("time_entries").update({ invoice_id: res.data.id }).in("id", inv.entryIds);
+      if (marked.error) { setBusy(false); toast("Invoice saved, but its hours still show as unbilled. Check your connection."); onSaved?.(); return onClose(); }
+    }
     setBusy(false);
     // Money just landed: play the little wallet animation instead of a plain message.
     if (status === "paid" && (!inv.id || inv.markPaid || inv.status !== "paid")) {
@@ -87,11 +93,20 @@ export default function InvoiceForm({ inv = {}, mode = "invoice", clients, exist
     catch { toast("Copy was blocked here."); }
   }
 
+  // Templates keep the lines and notes only: never the number, dates, client or status.
+  const tplData = () => ({ items: row().items, notes: notes.trim() });
+  const applyTpl = (d: Record<string, unknown>) => {
+    const xs = list(d.items, 100).map(obj).map((i) => ({ desc: str(i.desc, 500), qty: num(i.qty), rate: num(i.rate) })).filter((i) => i.desc.trim() || i.qty * i.rate);
+    if (xs.length) setItems(xs);
+    setNotes(str(d.notes, 5000));
+  };
+
   const title = pay ? (inv.id ? "Edit payment" : "Record money received") : inv.id ? `Invoice ${inv.number}` : "New invoice";
   return (
     <Modal label={title} onClose={onClose} wide={!pay}>
       <form onSubmit={save} style={{ display: "contents" }}>
         <h2>{title}</h2>
+        {!pay && <TemplatePicker kind="invoice" pick={!inv.id} data={tplData} onApply={applyTpl} />}
         <div className="form">
           <div className="field"><label htmlFor="iv-client">Client</label>
             <select id="iv-client" value={clientId} onChange={(e) => pickClient(e.target.value)}>
@@ -140,9 +155,11 @@ export default function InvoiceForm({ inv = {}, mode = "invoice", clients, exist
                 </>
               )}
               <div className="field full"><label htmlFor="iv-notes">Notes on the invoice</label><textarea id="iv-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Payment details, thank-you note…" style={{ minHeight: 64 }} /></div>
+              {inv.id && <div className="field full"><label>Reminders</label><RemindButton title={`Invoice ${number}${client ? ` for ${clientLabel(client)}` : ""}`} href={`/invoice/${inv.id}`} entity="invoice" entityId={inv.id} clientId={clientId || null} /></div>}
             </>
           )}
         </div>
+        {inv.id && <CommentThread entity="invoice" entityId={inv.id} clientId={inv.client_id ?? null} />}
         <div className="modal-foot">
           {inv.id && <button type="button" className="btn danger left" disabled={busy} onClick={remove}>{sure ? "Tap again to delete" : "Delete"}</button>}
           {!pay && <button type="button" className="btn" onClick={copy}><Icon name="copy" />Copy as text</button>}

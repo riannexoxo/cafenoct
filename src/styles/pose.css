@@ -1,0 +1,19 @@
+/* Nocti beside each page title, holding something for that page. Decorative only. */
+body[data-pose] .wrap > .head:first-child h1 { display: inline-flex; align-items: center; gap: 12px; }
+body[data-pose] .wrap > .head:first-child h1::after {
+  content: ""; flex: none; width: 1.6em; height: 1.6em; margin-block: -.3em;
+  background: var(--pose) center / contain no-repeat;
+  transform-origin: 50% 90%;
+}
+body[data-pose="calendar"] { --pose: url(/nocti/calendar.webp); }
+body[data-pose="coin"] { --pose: url(/nocti/coin.webp); }
+body[data-pose="stopwatch"] { --pose: url(/nocti/stopwatch.webp); }
+body[data-pose="clipboard"] { --pose: url(/nocti/clipboard.webp); }
+body[data-pose="jump"] { --pose: url(/nocti/jump.webp); }
+body[data-pose="wave"] { --pose: url(/nocti/wave.webp); }
+@media (prefers-reduced-motion: no-preference) {
+  body[data-pose] .wrap > .head:first-child h1::after { animation: pose-in .7s var(--spring) both, pose-bob 3.6s ease-in-out .7s infinite; }
+}
+@keyframes pose-in { from { opacity: 0; transform: translateY(10px) scale(.7) rotate(-8deg); } }
+@keyframes pose-bob { 50% { transform: translateY(-3px) rotate(3deg); } }
+@media print { body[data-pose] .wrap > .head:first-child h1::after { display: none; } }

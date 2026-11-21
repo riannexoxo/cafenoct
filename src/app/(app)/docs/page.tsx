@@ -7,7 +7,7 @@ export default async function DocsPage() {
   const clients = await getClients();
   return (
     <>
-      <div className="head"><div><div className="eyebrow">Workspace</div><h1>Docs</h1><p>SOPs, brand kits, meeting notes and briefs for every client.</p></div></div>
+      <div className="head"><div><h1>Docs</h1><p>SOPs, brand kits, meeting notes and briefs for every client.</p></div></div>
       <Docs clients={clients} />
     </>
   );

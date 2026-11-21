@@ -1,10 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import { THEME_COOKIE, lookOf, parseTheme } from "@/lib/theme";
-import "@fontsource/poppins/300.css";
-import "@fontsource/poppins/400.css";
-import "@fontsource/poppins/500.css";
-import "@fontsource/poppins/600.css";
+import "@fontsource-variable/nunito";
+import "@fontsource-variable/fredoka";
 import "@fontsource/dm-mono/400.css";
 import "@fontsource/dm-mono/500.css";
 import "./globals.css";
@@ -42,7 +40,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   // Your saved theme, read on the server so the first paint already has the right colors.
   const t = parseTheme((await cookies()).get(THEME_COOKIE)?.value);
   return (
-    <html lang="en" data-theme={t.mode === "auto" ? undefined : t.mode} data-accent={t.accent === "coffee" ? undefined : t.accent}>
+    <html lang="en" data-theme={t.mode === "auto" ? undefined : t.mode}>
       <body>{children}</body>
     </html>
   );

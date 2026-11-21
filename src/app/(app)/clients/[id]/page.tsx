@@ -10,6 +10,11 @@ import Timers from "@/components/timers";
 import { portalTabs, roleLabel } from "@/lib/roles";
 import ClientAvatar from "@/components/client-avatar";
 import { TheirTime } from "@/components/client-clocks";
+import PortalInvite from "@/components/portal-invite";
+import { ReportPicker } from "@/components/report-tools";
+import TimerButton from "@/components/timer-button";
+import ClientTimeline from "@/components/client-timeline";
+import ClientDetails from "@/components/client-details";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -18,6 +23,8 @@ export default async function ClientPortal({ params }: { params: Promise<{ id: s
   const clients = await getClients();
   const c = clients.find((x) => x.id === id);
   if (!c) notFound();
+  const now = new Date(), last = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonth = `${last.getFullYear()}-${String(last.getMonth() + 1).padStart(2, "0")}`;
   const schedule = c.work_days.length ? `${c.work_days.length === 5 && c.work_days.join() === "1,2,3,4,5" ? "Mon–Fri" : c.work_days.map((d) => DAYS[d - 1]).join(", ")}${c.hours_per_day ? `, ${c.hours_per_day}h a day` : ""}` : c.weekly_hours ? `${c.weekly_hours}h a week, flexible days` : "";
   return (
     <>
@@ -33,7 +40,9 @@ export default async function ClientPortal({ params }: { params: Promise<{ id: s
           </div>
         </div>
         <div className="row">
+          {!c.personal && <TimerButton clientId={c.id} label={clientLabel(c)} />}
           {!c.personal && <Link className="btn solid" href={`/clients/${c.id}/reports`}><Icon name="chat" />{c.report_cadence === "Weekly" ? "Weekly report" : "EOD report"}</Link>}
+          {!c.personal && <ReportPicker clientId={c.id} initial={lastMonth} />}
           <Link className="btn" href={`/clients/${c.id}/edit`}>Edit</Link>
         </div>
       </div>
@@ -45,6 +54,11 @@ export default async function ClientPortal({ params }: { params: Promise<{ id: s
         <TodoList clients={clients ?? []} clientId={c.id} />
         <Timers clients={clients ?? []} clientId={c.id} />
       </div>
+      <div className="cr-grid">
+        <ClientTimeline clientId={c.id} />
+        <ClientDetails clientId={c.id} />
+      </div>
+      {!c.personal && <PortalInvite clientId={c.id} clientName={c.name.split(" ")[0] || clientLabel(c)} />}
       <div className="card small muted row" style={{ gap: 8 }}><Icon name="spark" size={16} />Projects, content and docs for this client are next to move over.</div>
     </>
   );

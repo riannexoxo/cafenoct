@@ -11,7 +11,6 @@ export default async function Focus() {
     <>
       <div className="head">
         <div>
-          <div className="eyebrow">Pomodoro</div>
           <h1>Focus</h1>
           <p>Pick one task, press start and stay with it. Each finished session is logged to the client.</p>
         </div>

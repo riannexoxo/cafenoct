@@ -1,25 +1,42 @@
 import { adminClient } from "@/lib/automations-server";
+import { verifyTurnstile } from "@/lib/turnstile-server";
+import { newPasswordProblem } from "@/lib/auth-ui";
 
 // Creating an account with an invite code. The account is ready right away, no confirmation email to wait for.
 // The database checks the code again and marks it used, so a code can never make two accounts.
+// A client-portal invite uses the same codes: the new account is linked to that client's portal.
+const bad = (error: string, status = 400) => Response.json({ error }, { status });
+
 export async function POST(request: Request) {
   const b = await request.json().catch(() => ({}));
-  const invite = String(b.invite ?? "").trim().toUpperCase(), name = String(b.name ?? "").trim().slice(0, 80);
-  const email = String(b.email ?? "").trim().toLowerCase(), password = String(b.password ?? "");
-  if (!invite) return Response.json({ error: "Enter your invite code." }, { status: 400 });
-  if (!/^\S+@\S+\.\S+$/.test(email)) return Response.json({ error: "Enter a valid email." }, { status: 400 });
-  if (password.length < 8) return Response.json({ error: "Use a password of at least 8 characters." }, { status: 400 });
+  const invite = String(b.invite ?? "").trim().toUpperCase().slice(0, 40), name = String(b.name ?? "").trim().slice(0, 80);
+  const email = String(b.email ?? "").trim().toLowerCase().slice(0, 254), password = String(b.password ?? "");
+  if (!invite) return bad("Enter your invite code.");
+  if (!name) return bad("Enter your name.");
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return bad("Enter a valid email.");
+  const pw = newPasswordProblem(password, email);
+  if (pw) return bad(pw);
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
+  if (!(await verifyTurnstile(b.captcha, ip))) return bad("Please finish the quick check, then try again.");
 
   const sb = adminClient();
   const { data: inv } = await sb.from("invites").select("code,used_by").eq("code", invite).maybeSingle();
-  if (!inv) return Response.json({ error: "That invite code doesn't exist. Check it with the person who sent it." }, { status: 400 });
-  if (inv.used_by) return Response.json({ error: "That invite code was already used. Ask for a new one." }, { status: 400 });
+  // One message for unknown and used codes, so codes can't be probed one by one.
+  if (!inv || inv.used_by) return bad("That invite code isn't valid or was already used. Ask for a new one.");
 
-  const { data, error } = await sb.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { invite, name } });
+  // A client-portal invite only works for the email it was sent to, and makes a portal-only account.
+  const { data: portal } = await sb.from("portal_access").select("email").eq("invite_code", invite).is("member_id", null).neq("status", "revoked").maybeSingle<{ email: string }>();
+  if (portal && portal.email.trim().toLowerCase() !== email) return bad("This invite was sent to a different email. Use the address it was sent to.");
+
+  const { data, error } = await sb.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { invite, name }, ...(portal ? { app_metadata: { portal: true } } : {}) });
   if (error || !data.user) {
     const msg = error?.message ?? "";
-    return Response.json({ error: /already|registered|exists/i.test(msg) ? "There's already an account with that email. Sign in instead." : "Couldn't create the account. Try again." }, { status: 400 });
+    if (/already|registered|exists/i.test(msg)) return bad("There's already an account with that email. Sign in instead.");
+    if (/password/i.test(msg)) return bad("That password is too easy to guess. Try a longer one, like a short sentence.");
+    return bad("Couldn't create the account. Try again.");
   }
   await sb.from("profiles").upsert({ user_id: data.user.id, name, invoice_email: email }, { onConflict: "user_id" });
+  // Client-portal invite: link the new account to the portal it was sent for.
+  if (portal) await sb.from("portal_access").update({ member_id: data.user.id, status: "active" }).eq("invite_code", invite).is("member_id", null);
   return Response.json({ ok: true });
 }

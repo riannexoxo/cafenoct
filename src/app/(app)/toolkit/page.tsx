@@ -9,7 +9,6 @@ export default async function MyToolkit() {
     <>
       <div className="head">
         <div>
-          <div className="eyebrow">Social media</div>
           <h1>My toolkit</h1>
           <p>Your own library of hooks, captions, calls to action, hashtag sets and resources. It shows in every social media client&apos;s toolkit too.</p>
         </div>

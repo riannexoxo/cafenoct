@@ -46,7 +46,6 @@ export default function Quick({ clients }: { clients: Client[] }) {
     <div className="quick">
       <div className="head" style={{ marginBottom: 0 }}>
         <div>
-          <div className="eyebrow">Quick</div>
           <h1>What&apos;s next</h1>
           <p>{tasks == null ? " " : open ? `${open} task${open === 1 ? "" : "s"} due today or earlier.` : "Nothing due today."}</p>
         </div>

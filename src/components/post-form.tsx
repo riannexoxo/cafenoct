@@ -9,6 +9,12 @@ import { clientLabel, type Client } from "@/lib/types";
 import Modal from "./modal";
 import Icon from "./icon";
 import MediaThumb from "./media-thumb";
+import ShareLinkButton from "./share-link-button";
+import TemplatePicker, { list, str } from "./template-picker";
+import RemindButton from "./remind-button";
+import { ReactionCounts } from "./reactions";
+import { publishCheck, publishNow, useAccounts } from "@/lib/publish";
+import "@/styles/social.css";
 
 export type PostDraft = Partial<Post>;
 
@@ -55,6 +61,11 @@ export default function PostForm({ post = {}, clients, pillars, onClose, onSaved
   }
   const [busy, setBusy] = useState(false);
   const [sure, setSure] = useState(false);
+  const [id, setId] = useState(post.id); // a new post gets its id on the first save
+  const [err, setErr] = useState(post.publish_error ?? "");
+  const [publishing, setPublishing] = useState(false);
+  const accounts = useAccounts();
+  const chk = publishCheck({ status, platforms, post_urls: urls, client_id: clientId || null, media }, accounts);
 
   const lim = limits(platforms);
   const tagList = hashtags({ caption, hashtags: tags });
@@ -62,28 +73,50 @@ export default function PostForm({ post = {}, clients, pillars, onClose, onSaved
   const smmClients = clients.filter((c) => c.status !== "Past" && (c.roles?.some((r) => ["smm", "design", "video"].includes(r)) || c.id === clientId));
   const toggle = (n: string) => setPlatforms((ps) => (ps.includes(n) ? (ps.length > 1 ? ps.filter((x) => x !== n) : ps) : [...ps, n]));
 
-  async function save(e: React.FormEvent) {
-    e.preventDefault();
-    if (!title.trim() && !hook.trim() && !caption.trim()) return toast("Give the post a name, a hook or a caption.");
-    setBusy(true);
+  // Saves the form and returns the post's id (or null when it couldn't).
+  async function persist() {
     const cleanUrls = Object.fromEntries(Object.entries(urls).filter(([k, v]) => platforms.includes(k) && v.trim()).map(([k, v]) => [k, /^https?:\/\//i.test(v.trim()) ? v.trim() : `https://${v.trim()}`]));
     const row = {
       client_id: clientId || null, title: title.trim(), platforms, platform: platforms[0], format, publish_on: date || null, publish_at: time || null, status,
       pillar: pillar.trim(), hook: hook.trim(), caption, hashtags: tags.trim(), asset_url: asset.trim(), post_urls: cleanUrls, notes: notes.trim(), media,
       stats: Object.fromEntries(Object.entries(stats).filter(([k]) => platforms.includes(k))),
+      ...(status === "Posted" ? { publish_error: "" } : {}), // posted by hand: the old error no longer applies
     };
-    const { error } = post.id ? await supabase().from("posts").update(row).eq("id", post.id) : await supabase().from("posts").insert(row);
+    if (id) return (await supabase().from("posts").update(row).eq("id", id)).error ? null : id;
+    const { data, error } = await supabase().from("posts").insert(row).select("id").single<{ id: string }>();
+    if (error || !data) return null;
+    setId(data.id);
+    return data.id;
+  }
+  const empty = () => !title.trim() && !hook.trim() && !caption.trim();
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (empty()) return toast("Give the post a name, a hook or a caption.");
+    setBusy(true);
+    const saved = await persist();
     setBusy(false);
-    if (error) return toast("Could not save. Check your connection.");
+    if (!saved) return toast("Could not save. Check your connection.");
     if (status === "Posted" && post.status !== "Posted") toast(`Posted on ${platforms.join(", ")}. Nice work!`);
     else toast(post.id ? "Post saved" : "Post added to the calendar");
     onSaved();
     onClose();
   }
+  // "Publish now" and "Retry": save what's in the form, then post it for real through the server.
+  async function publish() {
+    if (empty()) return toast("Give the post a name, a hook or a caption.");
+    setPublishing(true);
+    const saved = await persist();
+    if (!saved) { setPublishing(false); return toast("Could not save. Check your connection."); }
+    const r = await publishNow(saved);
+    setPublishing(false);
+    setErr(r.error);
+    onSaved();
+    if (r.ok) onClose();
+  }
   async function remove() {
-    if (!post.id) return;
+    if (!id) return;
     if (!sure) return setSure(true);
-    const { error } = await supabase().from("posts").delete().eq("id", post.id);
+    const { error } = await supabase().from("posts").delete().eq("id", id);
     if (error) return toast("Could not delete. Try again.");
     toast("Post deleted");
     onSaved();
@@ -94,14 +127,35 @@ export default function PostForm({ post = {}, clients, pillars, onClose, onSaved
     catch { toast("Copy was blocked here."); }
   }
 
+  // Templates keep the reusable parts only: never dates, status, client or media.
+  const tplData = () => ({ format, platforms, title: title.trim(), caption, hashtags: tags.trim(), hook: hook.trim(), pillar: pillar.trim() });
+  const applyTpl = (d: Record<string, unknown>) => {
+    const ps = list(d.platforms, 20).map((x) => str(x)).filter((x) => PLATFORMS.some((p) => p.name === x));
+    if (ps.length) setPlatforms([...new Set(ps)]);
+    if (FORMATS.includes(str(d.format))) setFormat(str(d.format));
+    if (str(d.title)) setTitle(str(d.title, 300));
+    setCaption(str(d.caption, 5000));
+    setTags(str(d.hashtags, 2000));
+    setHook(str(d.hook, 500));
+    setPillar(str(d.pillar, 80));
+  };
+
   const heading = post.id ? title || "Edit post" : "Plan a post";
   return (
     <Modal label={heading} onClose={onClose} wide>
       <form onSubmit={save} style={{ display: "contents" }}>
         <div className="row" style={{ justifyContent: "space-between" }}>
           <h2 style={{ overflowWrap: "anywhere" }}>{heading}</h2>
-          <span className="pill" style={{ background: `color-mix(in srgb, ${statusTone(status)} 18%, transparent)`, color: statusTone(status) }}>{status}</span>
+          {err && status !== "Posted" ? <span className="pill pf-failed">Failed</span>
+            : <span className="pill" style={{ background: `color-mix(in srgb, ${statusTone(status)} 18%, transparent)`, color: statusTone(status) }}>{status}</span>}
         </div>
+        {err && status !== "Posted" && (
+          <div className="pub-fail" role="alert">
+            <div><b>This post didn&apos;t publish</b><span>{err}</span></div>
+            <button type="button" className="btn small" onClick={publish} disabled={publishing || !chk.ok} title={chk.why}><Icon name="repeat" />{publishing ? "Trying…" : "Retry"}</button>
+          </div>
+        )}
+        <TemplatePicker kind="post" pick={!id} data={tplData} onApply={applyTpl} />
         <div className="form">
           <div className="field full"><label>Platforms</label>
             <div className="row" style={{ gap: 6 }}>{PLATFORMS.map((p) => {
@@ -179,13 +233,20 @@ export default function PostForm({ post = {}, clients, pillars, onClose, onSaved
               </div>
             </div>
           )}
+          <div className="field full pf-ship"><label>Client approval</label>
+            {id && <ReactionCounts entityId={id} />}
+            {id ? <ShareLinkButton entity="post" entityId={id} clientId={clientId || null} /> : <small className="muted">Save the post first to get an approval link for your client.</small>}
+            {status !== "Posted" && !chk.ok && <small className="muted">Publish now: {chk.why}</small>}
+          </div>
+          {id && <div className="field full"><label>Reminders</label><RemindButton title={title || hook || "Post"} href={`/content?post=${id}`} entity="post" entityId={id} clientId={clientId || null} /></div>}
           <div className="field full"><label htmlFor="pf-notes">Notes</label><textarea id="pf-notes" value={notes} onChange={(e) => setNotes(e.target.value)} style={{ minHeight: 60 }} placeholder="Music, client feedback, ideas for the next one…" /></div>
         </div>
         <div className="modal-foot">
-          {post.id && <button type="button" className="btn danger left" onClick={remove}>{sure ? "Tap again to delete" : "Delete"}</button>}
+          {id && <button type="button" className="btn danger left" onClick={remove}>{sure ? "Tap again to delete" : "Delete"}</button>}
           <button type="button" className="btn" onClick={copy}><Icon name="copy" />Copy caption</button>
           {asset && <a className="btn" href={/^https?:\/\//i.test(asset) ? asset : `https://${asset}`} target="_blank" rel="noopener noreferrer"><Icon name="link" />Open design</a>}
           <button type="button" className="btn" onClick={onClose}>Cancel</button>
+          {status !== "Posted" && <button type="button" className="btn" onClick={publish} disabled={!chk.ok || publishing || busy || uploading > 0} title={chk.why}><Icon name="play" />{publishing ? "Posting…" : "Publish now"}</button>}
           <button type="submit" className="btn solid" disabled={busy || uploading > 0}>{busy ? "Saving…" : "Save"}</button>
         </div>
       </form>

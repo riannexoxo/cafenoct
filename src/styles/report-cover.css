@@ -1,0 +1,23 @@
+/* Monthly report cover: a branded first page. On screen it's the top of the report; in print it's a page of its own. */
+.rpt-front {
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px;
+  padding: clamp(28px, 7vw, 64px) 16px; border-radius: 20px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--c) 16%, var(--card)), var(--card) 70%);
+  border: 1px solid var(--line);
+}
+.rpt-front .avatar { box-shadow: var(--note-shadow); }
+.rpt-front-from { font-family: var(--display); font-weight: 600; font-size: 15px; color: var(--muted); letter-spacing: .02em; margin-bottom: 8px; }
+.rpt-front h1 { font-size: clamp(28px, 7vw, 44px); margin: 0; overflow-wrap: anywhere; }
+.rpt-front-month { margin: 0; font-size: 18px; color: var(--muted); }
+.rpt-front-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; width: 100%; max-width: 480px; margin: 18px 0 0; }
+.rpt-front-kpis div { display: flex; flex-direction: column; gap: 2px; padding: 12px 8px; border-radius: 16px; background: var(--card); border: 1px solid var(--line); }
+.rpt-front-kpis dt { font-size: 12px; color: var(--muted); }
+.rpt-front-kpis dd { margin: 0; font-size: clamp(22px, 6vw, 32px); font-weight: 700; color: var(--ink); }
+
+@media print {
+  /* Block layout so the page break after the cover works in every browser (flex breaks are patchy). */
+  .rpt-doc:has(.rpt-front) { display: block; }
+  .rpt-doc:has(.rpt-front) > * + * { margin-top: 16px; }
+  .rpt-front { min-height: calc(297mm - 24mm); justify-content: center; break-after: page; border: 0; border-radius: 0; }
+  .rpt-front, .rpt-front * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

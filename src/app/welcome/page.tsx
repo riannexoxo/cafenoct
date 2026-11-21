@@ -15,7 +15,7 @@ export default async function WelcomePage() {
     <main className="auth-page">
       <div className="auth-card welcome-card">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={brand.logo} alt="" className="auth-logo" />
+        <img src={brand.logo} alt="" fetchPriority="high" decoding="async" className="auth-logo" />
         <Welcome initial={{ name: p?.name ?? "", business: p?.business ?? "", currency: p?.currency || "USD", email: p?.invoice_email || (auth.claims.email as string) || "" }} />
       </div>
     </main>
