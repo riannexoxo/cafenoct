@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import { THEME_COOKIE, lookOf, parseTheme } from "@/lib/theme";
 import "@fontsource-variable/nunito";
+import "@fontsource-variable/fredoka";
 import "@fontsource/dm-mono/400.css";
 import "@fontsource/dm-mono/500.css";
 import "./globals.css";

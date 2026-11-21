@@ -10,7 +10,7 @@ export const MODES: [Mode, string][] = [["auto", "Auto"], ["light", "Light"], ["
 // Each theme's main colors, for the preview tiles and the browser bar (light, dark).
 type Look = { bg: string; card: string; ink: string; accent: string };
 export const ACCENTS: { key: Accent; label: string; light: Look; dark: Look }[] = [
-  { key: "coffee", label: "CafeNoct", light: { bg: "#F5EDE1", card: "#FFFDF9", ink: "#3E2A22", accent: "#B9875C" }, dark: { bg: "#1A1419", card: "#2A2128", ink: "#F3E8DC", accent: "#D7A77A" } },
+  { key: "coffee", label: "CafeNoct", light: { bg: "#F6EEE3", card: "#FFFCF8", ink: "#3B2622", accent: "#A3324B" }, dark: { bg: "#1B1418", card: "#2B2127", ink: "#F5E9DE", accent: "#E58BA0" } },
 ];
 export const lookOf = (a: Accent) => ACCENTS.find((x) => x.key === a) ?? ACCENTS[0];
 export const DEFAULT_THEME: Theme = { mode: "auto", accent: "coffee" };

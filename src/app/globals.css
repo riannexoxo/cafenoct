@@ -6,51 +6,57 @@ img { max-width: 100%; }
 [hidden] { display: none !important; }
 
 /* Layout: quiet left rail on desktop, bottom tab bar on phone; one scrolling panel. Palette from the coffee portfolio. */
-/* CafeNoct palette: cream, caramel, cocoa and dusty lavender, with blush, butter and mint as small accents.
-   Night mode is cocoa-plum, warm and dim. Paid/late colors, client colors and uploaded images stay the same. */
+/* CafeNoct x xo.rianne palette: cream, cocoa and berry, with caramel, rose milk, honey, dusty lavender and mint.
+   Berry is the primary (buttons, focus, active states). Plum is for failures. Night mode is warm cocoa-plum.
+   Paid/late colors, client colors and uploaded images stay the same. */
 :root {
-  --bg: #F5EDE1;
-  --paper: #FBF6EE;
-  --card: #FFFDF9;
-  --ink: #3E2A22;
-  --muted: #7B675B;
-  --accent: #B9875C;
-  --accent-ink: #8A5A36;
-  --accent-soft: #E3C4A3;
-  --line: rgba(62,42,34,.12);
-  --line-strong: rgba(62,42,34,.26);
-  --tint: rgba(62,42,34,.05);
-  --tint-strong: rgba(62,42,34,.09);
-  --glass: rgba(251,246,238,.82);
-  --good: #4F8A6A;
-  --warn: #B9823A;
-  --bad: #B5524B;
-  --on-accent: #FFF9F1;
-  /* Soft accents: blush for you-right-now (today, timer, focus), lavender for meetings, reports and docs,
-     butter for money, mint for done. */
-  --blush: #F6DDD8;
-  --rose: #DDA8A0;
-  --rose-ink: #8E4B44;
-  --lavender: #E4DCEE;
+  --bg: #F6EEE3;
+  --paper: #FBF6EF;
+  --card: #FFFCF8;
+  --ink: #3B2622;
+  --muted: #7A635A;
+  --accent: #A3324B;
+  --accent-ink: #8E2A41;
+  --accent-soft: #E8B4B8;
+  --caramel: #B9875C;
+  --caramel-ink: #8A5A36;
+  --line: rgba(59,38,34,.12);
+  --line-strong: rgba(59,38,34,.26);
+  --tint: rgba(59,38,34,.05);
+  --tint-strong: rgba(59,38,34,.09);
+  --glass: rgba(251,246,239,.82);
+  --good: #3F7D5E;
+  --warn: #A9752A;
+  --bad: #9B3350;
+  --plum: #5E3A5C;
+  --on-accent: #FFF8F2;
+  /* Soft accents: rose milk for you-right-now (today, timer, focus), lavender for meetings, reports and docs,
+     honey for money, mint for done. */
+  --blush: #F5DCDD;
+  --rose: #E8B4B8;
+  --rose-ink: #8E3A4A;
+  --lavender: #E6DEEF;
   --lilac: #9C8CBD;
   --lilac-ink: #5B4A80;
-  --butter: #F7E8B8;
-  --butter-ink: #7A5D12;
-  --mint: #D5ECDF;
+  --butter: #F8E6B5;
+  --butter-ink: #7A5A12;
+  --honey: #E6B655;
+  --mint: #D6ECDF;
   --mint-ink: #2F6B4E;
   /* Sticky-note card faces */
-  --note-cream: #FFF8EC;
-  --note-blush: #FBE7E3;
-  --note-butter: #FCF1CC;
-  --note-mint: #E3F3EA;
-  --note-lav: #EEE8F6;
-  --note-shadow: 0 1px 0 rgba(62,42,34,.06), 0 10px 24px -14px rgba(62,42,34,.32);
-  --shadow: 0 24px 60px -28px rgba(62,42,34,.35);
+  --note-cream: #FFF8EE;
+  --note-blush: #FBE5E6;
+  --note-butter: #FCF0CD;
+  --note-mint: #E4F3EA;
+  --note-lav: #EFE9F7;
+  --note-shadow: 0 1px 0 rgba(59,38,34,.06), 0 10px 24px -14px rgba(59,38,34,.32);
+  --shadow: 0 24px 60px -28px rgba(59,38,34,.35);
   --font: 'Nunito Variable', 'Nunito', ui-rounded, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --display: 'Fredoka Variable', 'Fredoka', 'Nunito Variable', ui-rounded, system-ui, sans-serif;
   --mono: 'DM Mono', ui-monospace, 'SF Mono', Menlo, monospace;
   --ease: cubic-bezier(.22,1,.36,1);
   --spring: cubic-bezier(.34,1.56,.64,1);
-  /* Motion curves from the BrewedOps Motion Library */
+  /* Motion curves from the BrewedOps Motion Library (brewedops.cloud/motionlibrary) */
   --ml-ease: cubic-bezier(.32,.72,0,1);
   --settle: linear(0, 0.0941 5.6%, 0.2736 11.1%, 0.4548 16.7%, 0.6076 22.2%, 0.7255 27.8%, 0.8119 33.3%, 0.8732 38.9%, 0.9156 44.4%, 0.9444 50%, 0.9636 55.6%, 0.9764 61.1%, 0.9848 66.7%, 0.9902 72.2%, 0.9938 77.8%, 0.996 83.3%, 0.9975 88.9%, 0.9984 94.4%, 1 100%);
   --pop: linear(0, 0.2 6%, 0.53 14%, 0.83 22%, 0.98 30%, 1.02 38%, 1.016 50%, 1.004 70%, 1 100%);
@@ -58,21 +64,23 @@ img { max-width: 100%; }
   --rail: 232px;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #1A1419; --paper: #211A20; --card: #2A2128; --ink: #F3E8DC; --muted: rgba(243,232,220,.62);
-  --accent: #D7A77A; --accent-ink: #E8C29C; --accent-soft: #9C7048;
+  --bg: #1B1418; --paper: #221A1F; --card: #2B2127; --ink: #F5E9DE; --muted: rgba(245,233,222,.62);
+  --accent: #E58BA0; --accent-ink: #F0A9B9; --accent-soft: #7A2A3E; --caramel: #D7A77A; --caramel-ink: #E8C29C;
   --line: rgba(255,255,255,.09); --line-strong: rgba(255,255,255,.2); --tint: rgba(255,255,255,.05); --tint-strong: rgba(255,255,255,.09);
-  --glass: rgba(33,26,32,.85); --good: #7DB896; --warn: #D9A55E; --bad: #E08B83; --on-accent: #1A1419; --blush: rgba(221,168,160,.16); --rose: #E2B4AE; --rose-ink: #F0C9C4; --lavender: rgba(180,160,214,.18); --lilac: #BBA8D8; --lilac-ink: #D9CCEE;
-  --butter: rgba(240,212,140,.15); --butter-ink: #F0D78E; --mint: rgba(150,206,176,.15); --mint-ink: #A8DCC0;
-  --note-cream: #2E242A; --note-blush: #33242A; --note-butter: #322B22; --note-mint: #22302A; --note-lav: #2A2535;
+  --glass: rgba(34,26,31,.85); --good: #7DB896; --warn: #E6B655; --bad: #EE8FA4; --plum: #C9A3C7; --on-accent: #1B1418;
+  --blush: rgba(232,180,184,.16); --rose: #E8B4B8; --rose-ink: #F3CDD0; --lavender: rgba(180,160,214,.18); --lilac: #BBA8D8; --lilac-ink: #D9CCEE;
+  --butter: rgba(230,182,85,.16); --butter-ink: #F0D78E; --honey: #E6B655; --mint: rgba(150,206,176,.15); --mint-ink: #A8DCC0;
+  --note-cream: #2E2328; --note-blush: #35232B; --note-butter: #322A21; --note-mint: #22302A; --note-lav: #2A2535;
   --note-shadow: 0 1px 0 rgba(255,255,255,.04), 0 12px 28px -16px rgba(0,0,0,.8);
   --shadow: 0 24px 60px -24px rgba(0,0,0,.8); color-scheme: dark; } }
 :root[data-theme="dark"] {
-  --bg: #1A1419; --paper: #211A20; --card: #2A2128; --ink: #F3E8DC; --muted: rgba(243,232,220,.62);
-  --accent: #D7A77A; --accent-ink: #E8C29C; --accent-soft: #9C7048;
+  --bg: #1B1418; --paper: #221A1F; --card: #2B2127; --ink: #F5E9DE; --muted: rgba(245,233,222,.62);
+  --accent: #E58BA0; --accent-ink: #F0A9B9; --accent-soft: #7A2A3E; --caramel: #D7A77A; --caramel-ink: #E8C29C;
   --line: rgba(255,255,255,.09); --line-strong: rgba(255,255,255,.2); --tint: rgba(255,255,255,.05); --tint-strong: rgba(255,255,255,.09);
-  --glass: rgba(33,26,32,.85); --good: #7DB896; --warn: #D9A55E; --bad: #E08B83; --on-accent: #1A1419; --blush: rgba(221,168,160,.16); --rose: #E2B4AE; --rose-ink: #F0C9C4; --lavender: rgba(180,160,214,.18); --lilac: #BBA8D8; --lilac-ink: #D9CCEE;
-  --butter: rgba(240,212,140,.15); --butter-ink: #F0D78E; --mint: rgba(150,206,176,.15); --mint-ink: #A8DCC0;
-  --note-cream: #2E242A; --note-blush: #33242A; --note-butter: #322B22; --note-mint: #22302A; --note-lav: #2A2535;
+  --glass: rgba(34,26,31,.85); --good: #7DB896; --warn: #E6B655; --bad: #EE8FA4; --plum: #C9A3C7; --on-accent: #1B1418;
+  --blush: rgba(232,180,184,.16); --rose: #E8B4B8; --rose-ink: #F3CDD0; --lavender: rgba(180,160,214,.18); --lilac: #BBA8D8; --lilac-ink: #D9CCEE;
+  --butter: rgba(230,182,85,.16); --butter-ink: #F0D78E; --honey: #E6B655; --mint: rgba(150,206,176,.15); --mint-ink: #A8DCC0;
+  --note-cream: #2E2328; --note-blush: #35232B; --note-butter: #322A21; --note-mint: #22302A; --note-lav: #2A2535;
   --note-shadow: 0 1px 0 rgba(255,255,255,.04), 0 12px 28px -16px rgba(0,0,0,.8);
   --shadow: 0 24px 60px -24px rgba(0,0,0,.8); color-scheme: dark; }
 
@@ -82,7 +90,7 @@ body { background: var(--bg); color: var(--ink); font: 400 14px/1.6 var(--font);
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
-h1, h2, h3 { margin: 0; font-weight: 800; letter-spacing: -.01em; text-wrap: balance; }
+h1, h2, h3 { margin: 0; font-family: var(--display); font-weight: 600; letter-spacing: -.005em; text-wrap: balance; }
 .num, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 
 /* shell */
@@ -1053,7 +1061,7 @@ html, body { transition: background-color .35s var(--ease), color .35s var(--eas
 .note-mint { background: var(--note-mint); } .note-lav { background: var(--note-lav); }
 .note > .card { background: transparent; border: 0; box-shadow: none; padding: 0; }
 .note header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
-.note h3 { font-size: 16px; font-weight: 800; }
+.note h3 { font-size: 17px; font-weight: 600; }
 .note-more { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; font-weight: 700; color: var(--muted); text-decoration: none; }
 .note-more:hover { color: var(--ink); }
 .note-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -1066,9 +1074,15 @@ html, body { transition: background-color .35s var(--ease), color .35s var(--eas
 .note-adds { display: flex; flex-wrap: wrap; gap: 8px; }
 .note-add { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 99px; border: 1px solid var(--line-strong); background: color-mix(in srgb, var(--card) 70%, transparent); font-weight: 700; font-size: 13px; color: var(--ink); text-decoration: none; transition: transform .25s var(--spring), background .2s; }
 .note-add:hover { background: var(--card); } .note-add:active { transform: scale(.96); }
-.nocti { display: block; height: auto; user-select: none; }
-.nocti-sleepy { animation: nocti-doze 4.5s ease-in-out infinite; transform-origin: 50% 90%; }
-@keyframes nocti-doze { 50% { transform: translateY(2px) scale(1.015, .985); } }
-@media (prefers-reduced-motion: reduce) { .note, .note-add { transition: none; } .note:hover { transform: none; } .nocti-sleepy { animation: none; } }
+/* Nocti rig: layers so breathing, glancing and reactions never fight over one transform. */
+.nocti-rig { position: relative; display: inline-block; flex: none; user-select: none; -webkit-user-select: none; }
+.nocti-rig :is(.nocti-float, .nocti-look, .nocti-react, .nocti-body) { position: absolute; inset: 0; display: block; }
+.nocti-body img, .nocti-awake img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.nocti-awake { position: absolute; inset: 0; }
+.nocti-shadow { position: absolute; left: 26%; right: 26%; bottom: 4%; height: 7%; border-radius: 50%; background: radial-gradient(closest-side, rgba(59,38,34,.22), transparent); }
+.nocti-spark { position: absolute; left: 50%; top: 45%; pointer-events: none; }
+.nocti-spark i { position: absolute; font-style: normal; color: var(--honey); font-size: 14px; opacity: 0; text-shadow: 0 1px 0 rgba(0,0,0,.08); }
+.nocti-spark i:nth-child(2) { color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .note, .note-add { transition: none; } .note:hover { transform: none; } }
 
 .loading-nocti { display: flex; align-items: center; gap: 12px; color: var(--muted); font-weight: 700; }

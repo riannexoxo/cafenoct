@@ -3,8 +3,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { supabaseKey, supabaseUrl } from "@/lib/supabase/env";
 
 // /api/inbox is called by your Gmail script and /api/automations/run by the 5-minute schedule;
-// both bring their own private key instead of a session.
-const PUBLIC = ["/login", "/auth", "/api/inbox", "/api/automations/run", "/api/signup"];
+// both bring their own private key instead of a session. /approve, /book and /form are the public client pages
+// (approval links, booking page, intake forms): they only read and write through scoped database functions.
+const PUBLIC = ["/login", "/auth/", "/forgot-password", "/api/inbox", "/api/automations/run", "/api/signup", "/approve/", "/book/", "/form/"];
 
 // Keeps the sign-in session fresh on every request and sends signed-out visitors to the login page.
 export async function proxy(request: NextRequest) {
