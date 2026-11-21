@@ -26,3 +26,5 @@ a.inbox-title:hover { color: var(--accent-ink); }
   font: 700 11px/20px var(--mono); text-align: center; }
 @media (max-width: 560px) { .inbox-acts { flex-direction: column; } }
 @media (prefers-reduced-motion: reduce) { .inbox-i { transition: none; } }
+.tabbar button { position: relative; }
+.tab-dot { position: absolute; top: 6px; right: calc(50% - 16px); width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }

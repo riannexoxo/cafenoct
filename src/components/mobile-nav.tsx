@@ -9,6 +9,9 @@ import Icon, { type IconName } from "./icon";
 import ClientAvatar from "./client-avatar";
 import { openFeedback } from "./feedback";
 import { portalTabs, rolePages } from "@/lib/roles";
+import { openPalette } from "./command-palette";
+import { openTour } from "./tour";
+import { useUnread } from "./inbox";
 
 const TABS: [string, string, IconName][] = [
   ["/", "Today", "today"],
@@ -17,6 +20,8 @@ const TABS: [string, string, IconName][] = [
   ["/clients", "Clients", "clients"],
 ];
 const ALL: [string, string, IconName][] = [
+  ["/inbox", "Inbox", "bell"],
+  ["/pipeline", "Pipeline", "projects"],
   ["/time", "Time", "time"],
   ["/focus", "Focus", "focus"],
   ["/wallet", "Wallet", "money"],
@@ -37,6 +42,7 @@ export default function MobileNav({ clients }: { clients: Client[] }) {
   const active = (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
   const inTabs = TABS.some(([h]) => active(h));
   const here = clients.find((c) => c.id === path.match(/^\/clients\/([0-9a-f-]{36})/)?.[1]);
+  const unread = useUnread();
   return (
     <>
       <nav className="tabbar" aria-label="Sections">
@@ -49,6 +55,7 @@ export default function MobileNav({ clients }: { clients: Client[] }) {
         <button className={!inTabs || open ? "on" : ""} onClick={() => setOpen(true)} aria-haspopup="dialog">
           <Icon name="more" />
           <span>More</span>
+          {unread > 0 && <i className="tab-dot" aria-label={`${unread} unread in Inbox`} />}
         </button>
       </nav>
       {open && (
@@ -91,6 +98,8 @@ export default function MobileNav({ clients }: { clients: Client[] }) {
             </div>
             <div className="modal-foot">
               <form action={signOut} className="left"><button className="btn" type="submit">Sign out</button></form>
+              <button className="btn" type="button" onClick={() => { setOpen(false); openPalette(); }}>Search</button>
+              <button className="btn" type="button" onClick={() => { setOpen(false); openTour(); }}>Tour</button>
               <button className="btn" type="button" onClick={() => { setOpen(false); openFeedback(); }}>Feedback</button>
               <button className="btn solid" onClick={() => setOpen(false)}>Close</button>
             </div>
