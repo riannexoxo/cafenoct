@@ -8,9 +8,10 @@ export type Sub = { id: string; title: string; done: boolean };
 export type TLink = { id: string; url: string; label: string };
 export type Task = {
   id: string; client_id: string | null; project_id: string | null; title: string; notes: string; status: string; priority: string;
+  labels?: string[]; milestone?: boolean;
   due_date: string | null; repeat: string; done_at: string | null; subtasks: Sub[]; links: TLink[]; position: number;
 };
-export const TASK_COLS = "id,client_id,project_id,title,notes,status,priority,due_date,repeat,done_at,subtasks,links,position";
+export const TASK_COLS = "id,client_id,project_id,title,notes,status,priority,due_date,repeat,done_at,subtasks,links,position,labels,milestone";
 export type Project = { id: string; client_id: string | null; name: string; status: "Active" | "On hold" | "Done"; start_date: string | null; due_date: string | null; description: string };
 export const PROJECT_COLS = "id,client_id,name,status,start_date,due_date,description";
 
@@ -31,7 +32,7 @@ export async function setStatus(t: Task, status: string, client?: Client) {
   if (error || !done || !t.repeat || t.repeat === "none" || t.status === "done") return { error, next: null };
   const base = t.due_date && t.due_date > today() ? t.due_date : today();
   const next = nextDue(t.repeat, base, client);
-  await supabase().from("tasks").insert({ title: t.title, client_id: t.client_id, project_id: t.project_id, priority: t.priority, repeat: t.repeat, notes: t.notes, due_date: next, subtasks: t.subtasks.map((s) => ({ ...s, done: false })) });
+  await supabase().from("tasks").insert({ title: t.title, client_id: t.client_id, project_id: t.project_id, priority: t.priority, repeat: t.repeat, notes: t.notes, due_date: next, subtasks: t.subtasks.map((s) => ({ ...s, done: false })), labels: t.labels ?? [], milestone: t.milestone ?? false });
   return { error: null, next };
 }
 

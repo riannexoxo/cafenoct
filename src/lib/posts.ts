@@ -3,9 +3,10 @@ export type Post = {
   id: string; client_id: string | null; title: string; publish_on: string | null; publish_at: string | null;
   status: Status; format: string; caption: string; hashtags: string; hook: string; pillar: string;
   platforms: string[]; post_urls: Record<string, string>; stats: Record<string, Record<string, number>>; asset_url: string; notes: string; media: string[];
+  publish_error?: string; published_at?: string | null;
 };
 export type Status = "Idea" | "Drafting" | "For approval" | "Scheduled" | "Posted";
-export const POST_COLS = "id,client_id,title,publish_on,publish_at,status,format,caption,hashtags,hook,pillar,platforms,post_urls,stats,asset_url,notes,media";
+export const POST_COLS = "id,client_id,title,publish_on,publish_at,status,format,caption,hashtags,hook,pillar,platforms,post_urls,stats,asset_url,notes,media,publish_error,published_at";
 
 export const PLATFORMS: { name: string; short: string; color: string; caption: number; tags: number; tagHint: string }[] = [
   { name: "Instagram", short: "IG", color: "#D6457A", caption: 2200, tags: 30, tagHint: "Up to 30. 3–5 focused ones usually work best." },
@@ -27,6 +28,15 @@ export const STATUSES: { name: Status; tone: string }[] = [
   { name: "Scheduled", tone: "var(--accent)" }, { name: "Posted", tone: "var(--good)" },
 ];
 export const statusTone = (s: string) => STATUSES.find((x) => x.name === s)?.tone ?? "var(--muted)";
+// "Failed" isn't a database status: it's any post whose last publish attempt left an error.
+export const failed = (p: Pick<Post, "publish_error">) => !!p.publish_error?.trim();
+export type Stage = "Draft" | "For approval" | "Scheduled" | "Posted" | "Failed";
+export const stage = (p: Pick<Post, "status" | "publish_error">): Stage =>
+  failed(p) && p.status !== "Posted" ? "Failed" : p.status === "Idea" || p.status === "Drafting" ? "Draft" : p.status;
+// Calendar order: by day, then time (no time first), then name, so a moved post lands in its right place.
+export const byDate = (a: Post, b: Post) => (a.publish_on ?? "").localeCompare(b.publish_on ?? "") || (a.publish_at ?? "").localeCompare(b.publish_at ?? "") || a.id.localeCompare(b.id);
+// Platforms CafeNoct can post to for you (Instagram and Facebook Pages, through Meta).
+export const AUTO_PLATFORMS = ["Instagram", "Facebook"];
 
 // All the hashtags in the caption and hashtag box, without repeats.
 export const hashtags = (p: Pick<Post, "caption" | "hashtags">) => [...new Set(`${p.caption} ${p.hashtags}`.match(/#[\p{L}\p{N}_]+/gu)?.map((t) => t.toLowerCase()) ?? [])];

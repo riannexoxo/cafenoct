@@ -2,7 +2,7 @@
 // into posts.stats (the same place the manual Analytics page reads from). Server only.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { partsIn } from "@/lib/tz";
-import type { Stats } from "@/lib/posts";
+import { isVideo, type Stats } from "@/lib/posts";
 
 export const APP_URL = "https://cafenoct.vercel.app";
 const GRAPH = "https://graph.facebook.com/v25.0";
@@ -32,7 +32,8 @@ export function metaAuthUrl(state: string) {
   const q = new URLSearchParams({ client_id: process.env.META_APP_ID!, redirect_uri: redirectUri("meta"), state, response_type: "code" });
   // Business apps use a Facebook Login for Business configuration; otherwise ask for the permissions directly.
   if (process.env.META_CONFIG_ID) q.set("config_id", process.env.META_CONFIG_ID);
-  else q.set("scope", "pages_show_list,pages_read_engagement,read_insights,instagram_basic,instagram_manage_insights,business_management");
+  // instagram_content_publish and pages_manage_posts let "Publish now" post for you. Meta only grants them after app review.
+  else q.set("scope", "pages_show_list,pages_read_engagement,read_insights,instagram_basic,instagram_manage_insights,business_management,instagram_content_publish,pages_manage_posts");
   return `https://www.facebook.com/v25.0/dialog/oauth?${q}`;
 }
 
@@ -223,4 +224,78 @@ export async function saveAccounts(sb: SupabaseClient, userId: string, list: { p
     n++;
   }
   return n;
+}
+
+// ---------- Posting for you (Instagram and Facebook Pages) ----------
+
+type PublishIn = { externalId: string; token: string; caption: string; media: string[]; format: string };
+const send = (url: string, body: Record<string, string>) => getJson(url, { method: "POST", body: new URLSearchParams(body) });
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// Instagram processes videos (and carousels) before they can go live; wait until the container is ready.
+async function igReady(id: string, token: string, until: number) {
+  for (;;) {
+    const r = await getJson(`${GRAPH}/${id}?${new URLSearchParams({ fields: "status_code", access_token: token })}`);
+    if (r.status_code === "FINISHED" || r.status_code === "PUBLISHED") return;
+    if (r.status_code === "ERROR" || r.status_code === "EXPIRED") throw new Error("Instagram could not process the media.");
+    if (Date.now() > until) throw new Error("Instagram is still processing the video.");
+    await wait(3000);
+  }
+}
+
+// Creates the media container(s), then publishes. One file is a post or reel, several are a carousel.
+export async function publishInstagram(a: PublishIn) {
+  const until = Date.now() + 40000, ig = a.externalId, t = a.token;
+  const box = async (body: Record<string, string>) => (await send(`${GRAPH}/${ig}/media`, { ...body, access_token: t })).id as string;
+  let id: string;
+  if (a.media.length > 1) {
+    const kids: string[] = [];
+    for (const u of a.media.slice(0, 10)) kids.push(await box(isVideo(u) ? { media_type: "VIDEO", video_url: u, is_carousel_item: "true" } : { image_url: u, is_carousel_item: "true" }));
+    for (const [i, u] of a.media.slice(0, 10).entries()) if (isVideo(u)) await igReady(kids[i], t, until);
+    id = await box({ media_type: "CAROUSEL", children: kids.join(","), caption: a.caption });
+    await igReady(id, t, until);
+  } else {
+    const u = a.media[0], story = a.format === "Story";
+    id = await box(isVideo(u) ? (story ? { media_type: "STORIES", video_url: u } : { media_type: "REELS", video_url: u, caption: a.caption })
+      : story ? { media_type: "STORIES", image_url: u } : { image_url: u, caption: a.caption });
+    if (isVideo(u)) await igReady(id, t, until);
+  }
+  const done = await send(`${GRAPH}/${ig}/media_publish`, { creation_id: id, access_token: t });
+  const info = await getJson(`${GRAPH}/${done.id}?${new URLSearchParams({ fields: "permalink", access_token: t })}`).catch(() => ({}));
+  return { id: String(done.id), url: String(info.permalink ?? "") };
+}
+
+// A text post, a photo, several photos in one post, or a video on a Facebook Page.
+export async function publishFacebook(a: PublishIn) {
+  const pg = a.externalId, t = a.token;
+  const imgs = a.media.filter((u) => !isVideo(u)), vid = a.media.find(isVideo);
+  if (vid) {
+    const r = await send(`${GRAPH}/${pg}/videos`, { file_url: vid, description: a.caption, access_token: t });
+    return { id: String(r.id), url: `https://www.facebook.com/${pg}/videos/${r.id}` };
+  }
+  let id: string;
+  if (imgs.length === 1) {
+    const r = await send(`${GRAPH}/${pg}/photos`, { url: imgs[0], message: a.caption, access_token: t });
+    id = String(r.post_id ?? r.id);
+  } else {
+    const body: Record<string, string> = { message: a.caption, access_token: t };
+    for (const [i, u] of imgs.slice(0, 10).entries()) {
+      const r = await send(`${GRAPH}/${pg}/photos`, { url: u, published: "false", access_token: t });
+      body[`attached_media[${i}]`] = JSON.stringify({ media_fbid: r.id });
+    }
+    id = String((await send(`${GRAPH}/${pg}/feed`, body)).id);
+  }
+  return { id, url: `https://www.facebook.com/${id}` };
+}
+
+// Meta's errors, in plain words. A missing permission is said clearly instead of pretending it worked.
+export function publishProblem(pl: "Instagram" | "Facebook", e: unknown) {
+  const m = e instanceof Error ? e.message : String(e);
+  if (/permission|\(#(3|10|200)\)/i.test(m)) return pl === "Instagram"
+    ? "Instagram needs the instagram_content_publish permission. Reconnect after your Meta app is approved."
+    : "Facebook needs the pages_manage_posts permission. Reconnect after your Meta app is approved.";
+  if (/\(#190\)|access token|session/i.test(m)) return `Your ${pl} connection expired. Reconnect it in Analytics, Connections.`;
+  if (/aspect ratio/i.test(m)) return "Instagram didn't accept the image shape. Feed images need to be between 4:5 and 1.91:1.";
+  if (/still processing/i.test(m)) return "Instagram is still processing the video. Try again in a minute.";
+  return `${pl} didn't take it: ${m.slice(0, 140)}`;
 }

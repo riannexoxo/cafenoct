@@ -1,19 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/use-rows";
+import { supabase, useRows } from "@/lib/use-rows";
 import { COLUMNS, setStatus, uid, type Project, type Sub, type Task, type TLink } from "@/lib/work";
 import { rel } from "@/lib/dates";
 import { toast } from "@/lib/toast";
 import { clientLabel, type Client } from "@/lib/types";
 import Modal from "./modal";
 import Icon from "./icon";
+import { labelTone, type VTask } from "./views/shared";
+import "@/styles/views.css";
 
-export type TaskDraft = Partial<Task>;
+export type TaskDraft = Partial<VTask>;
+type Comment = { id: string; body: string; created_at: string };
+const when = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 const safe = (u: string) => { try { const x = new URL(/^https?:\/\//i.test(u) ? u : `https://${u}`); return x.href; } catch { return ""; } };
 
-// One task with everything about it: status, due date, checklist, links and notes.
-export default function TaskForm({ task = {}, clients, projects, onClose, onSaved }: { task?: TaskDraft; clients: Client[]; projects: Project[]; onClose: () => void; onSaved: () => void }) {
+// One task with everything about it: status, due date, labels, checklist, links, notes, comments and history.
+export default function TaskForm({ task = {}, clients, projects, onClose, onSaved, labelSuggestions = [] }: { task?: TaskDraft; clients: Client[]; projects: Project[]; onClose: () => void; onSaved: () => void; labelSuggestions?: string[] }) {
   const [title, setTitle] = useState(task.title ?? "");
   const [clientId, setClientId] = useState(task.client_id ?? "");
   const [projectId, setProjectId] = useState(task.project_id ?? "");
@@ -24,6 +28,9 @@ export default function TaskForm({ task = {}, clients, projects, onClose, onSave
   const [notes, setNotes] = useState(task.notes ?? "");
   const [subs, setSubs] = useState<Sub[]>(task.subtasks ?? []);
   const [links, setLinks] = useState<TLink[]>(task.links ?? []);
+  const [labels, setLabels] = useState<string[]>(task.labels ?? []);
+  const [newLabel, setNewLabel] = useState("");
+  const [milestone, setMilestone] = useState(task.milestone ?? false);
   const [newSub, setNewSub] = useState("");
   const [newLink, setNewLink] = useState("");
   const [busy, setBusy] = useState(false);
@@ -35,7 +42,7 @@ export default function TaskForm({ task = {}, clients, projects, onClose, onSave
     e.preventDefault();
     if (!title.trim()) return toast("Give the task a name.");
     setBusy(true);
-    const row = { title: title.trim(), client_id: clientId || null, project_id: projectId || null, priority, due_date: due || null, repeat, notes, subtasks: subs, links };
+    const row = { title: title.trim(), client_id: clientId || null, project_id: projectId || null, priority, due_date: due || null, repeat, notes, subtasks: subs, links, labels, milestone };
     let error;
     if (task.id) {
       ({ error } = await supabase().from("tasks").update(row).eq("id", task.id));
@@ -59,6 +66,21 @@ export default function TaskForm({ task = {}, clients, projects, onClose, onSave
     onSaved();
     onClose();
   }
+  async function duplicate() {
+    const { error } = await supabase().from("tasks").insert({
+      title: `${title.trim() || task.title} (copy)`, client_id: clientId || null, project_id: projectId || null, priority, due_date: due || null, start_date: task.start_date ?? null,
+      repeat, notes, subtasks: subs.map((x) => ({ ...x, id: uid(), done: false })), links, labels, milestone, status: "todo",
+    });
+    if (error) return toast("Could not copy it. Try again.");
+    toast("Copied. The copy is in To do.");
+    onSaved();
+    onClose();
+  }
+  const addLabel = () => {
+    const l = newLabel.trim().slice(0, 40);
+    if (l && !labels.some((x) => x.toLowerCase() === l.toLowerCase()) && labels.length < 20) setLabels((xs) => [...xs, l]);
+    setNewLabel("");
+  };
   const addSub = () => { if (!newSub.trim()) return; setSubs((s) => [...s, { id: uid(), title: newSub.trim(), done: false }]); setNewSub(""); };
   const addLink = () => { const u = safe(newLink.trim()); if (!u) return toast("Paste a full link."); let label = u; try { label = new URL(u).hostname.replace("www.", ""); } catch {} setLinks((l) => [...l, { id: uid(), url: u, label }]); setNewLink(""); };
 
@@ -75,6 +97,17 @@ export default function TaskForm({ task = {}, clients, projects, onClose, onSave
           <div className="field"><label htmlFor="tk-due">Due</label><input id="tk-due" type="date" value={due} onChange={(e) => setDue(e.target.value)} /></div>
           <div className="field"><label htmlFor="tk-pri">Priority</label><select id="tk-pri" value={priority} onChange={(e) => setPriority(e.target.value)}><option value="low">Low</option><option value="med">Normal</option><option value="high">High</option></select></div>
           <div className="field full"><label htmlFor="tk-rep">Repeats</label><select id="tk-rep" value={repeat} onChange={(e) => setRepeat(e.target.value)}><option value="none">Once</option><option value="daily">Every work day</option><option value="weekly">Every week</option><option value="monthly">Every month</option></select></div>
+          <div className="field full"><label htmlFor="tk-label">Labels</label>
+            <div className="vlabel-edit">
+              {labels.map((l) => <span key={l} className={`vlab ${labelTone(l)}`}>{l}<button type="button" aria-label={`Remove label ${l}`} onClick={() => setLabels((xs) => xs.filter((x) => x !== l))}><Icon name="x" size={11} /></button></span>)}
+              <input id="tk-label" list="tk-label-list" value={newLabel} maxLength={40} onChange={(e) => setNewLabel(e.target.value)} placeholder={labels.length ? "Add another" : "Type a label and press Enter"}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addLabel(); } else if (e.key === "Backspace" && !newLabel && labels.length) setLabels((xs) => xs.slice(0, -1)); }} onBlur={addLabel} />
+              <datalist id="tk-label-list">{labelSuggestions.filter((l) => !labels.includes(l)).map((l) => <option key={l} value={l} />)}</datalist>
+            </div>
+          </div>
+          <div className="field full">
+            <button type="button" className="vtoggle" role="switch" aria-checked={milestone} onClick={() => setMilestone(!milestone)}><i aria-hidden="true" /><span className="vdia" aria-hidden="true" />Milestone<span className="small muted">a key date, shown as a diamond on the timeline</span></button>
+          </div>
           <div className="field full"><label>Checklist{subs.length ? ` (${doneSubs}/${subs.length})` : ""}</label>
             <div className="list">{subs.map((s) => (
               <div className="li" key={s.id} style={{ padding: "4px 0" }}>
@@ -91,12 +124,58 @@ export default function TaskForm({ task = {}, clients, projects, onClose, onSave
           </div>
           <div className="field full"><label htmlFor="tk-notes">Notes</label><textarea id="tk-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Details and instructions from the client…" /></div>
         </div>
+        {task.id && <Thread task={task} />}
         <div className="modal-foot">
           {task.id && <button type="button" className="btn danger left" onClick={remove}>{sure ? "Tap again to delete" : "Delete"}</button>}
+          {task.id && <button type="button" className="btn ghost" onClick={duplicate}><Icon name="copy" />Duplicate</button>}
           <button type="button" className="btn" onClick={onClose}>Cancel</button>
           <button type="submit" className="btn solid" disabled={busy}>{busy ? "Saving…" : "Save"}</button>
         </div>
       </form>
     </Modal>
+  );
+}
+
+// Comments on a task, then everything that happened to it, oldest first.
+function Thread({ task }: { task: TaskDraft }) {
+  const id = task.id!;
+  const [comments, reload] = useRows<Comment>(`task-comments:${id}`, (s) => s.from("task_comments").select("id,body,created_at").eq("task_id", id).order("created_at").limit(200), ["task_comments"]);
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function add() {
+    const b = body.trim();
+    if (!b) return;
+    if (b.length > 4000) return toast("Keep comments under 4000 characters.");
+    setBusy(true);
+    const { error } = await supabase().from("task_comments").insert({ task_id: id, body: b });
+    setBusy(false);
+    if (error) return toast("Could not post the comment. Try again.");
+    setBody("");
+    reload();
+  }
+  const trail = [
+    task.created_at && { at: task.created_at, text: "Created" },
+    task.updated_at && task.updated_at !== task.created_at && { at: task.updated_at, text: "Last updated" },
+    task.done_at && { at: task.done_at, text: "Marked done" },
+    ...(comments ?? []).map((c) => ({ at: c.created_at, text: "Comment added" })),
+  ].filter((x): x is { at: string; text: string } => !!x).sort((a, b) => a.at.localeCompare(b.at));
+  return (
+    <div className="vthread">
+      <div className="field full">
+        <label htmlFor="tk-cmt">Comments{comments?.length ? ` (${comments.length})` : ""}</label>
+        {(comments ?? []).map((c) => <div key={c.id} className="cmt"><span className="small muted">{when(c.created_at)}</span><p>{c.body}</p></div>)}
+        <textarea id="tk-cmt" value={body} maxLength={4000} onChange={(e) => setBody(e.target.value)} placeholder="Write a note for later or a reply from the client…" style={{ minHeight: 60 }}
+          onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); add(); } }} />
+        <div className="row" style={{ justifyContent: "space-between" }}>
+          <span className={`small ${body.length > 4000 ? "bad-t" : "muted"}`}>{body.length ? `${body.length}/4000` : ""}</span>
+          <button type="button" className="btn small" disabled={busy || !body.trim()} onClick={add}>{busy ? "Posting…" : "Comment"}</button>
+        </div>
+      </div>
+      {trail.length > 0 && (
+        <ol className="vtrail" aria-label="Activity">
+          {trail.map((x, i) => <li key={i}><span>{x.text}</span><time dateTime={x.at} className="small muted">{when(x.at)}</time></li>)}
+        </ol>
+      )}
+    </div>
   );
 }

@@ -19,6 +19,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const claims = auth?.claims;
   if (!claims) redirect("/login");
   const [profile, all, owner] = await Promise.all([getProfile(), getClients(), ownerId()]);
+  // A client's own account (invited to a portal) has no workspace of its own: send it to the portal.
+  if (all.length === 0) {
+    const { data: portals } = await supabase.rpc("portal_clients");
+    if (Array.isArray(portals) && portals.length > 0) redirect("/portal");
+  }
   // New accounts with no clients yet start with the short welcome setup.
   if (!profile?.settings?.onboarded && all.length === 0) redirect("/welcome");
   const clients = all.filter((c) => c.status !== "Past");

@@ -4,6 +4,7 @@ import { getClients } from "@/lib/data";
 import { rateText } from "@/lib/format";
 import Icon from "@/components/icon";
 import ClientAvatar from "@/components/client-avatar";
+import ClientsCsv from "@/components/views/clients-csv";
 
 export const metadata = { title: "Clients" };
 
@@ -15,7 +16,10 @@ export default async function Clients() {
     <>
       <div className="head">
         <div><div className="eyebrow">Your people</div><h1>Clients</h1><p>{clients.filter((c) => c.status === "Active").length} active · {clients.length} total</p></div>
-        <Link className="btn solid" href="/clients/new"><Icon name="plus" />New client</Link>
+        <div className="row" style={{ gap: 8 }}>
+          <ClientsCsv />
+          <Link className="btn solid" href="/clients/new"><Icon name="plus" />New client</Link>
+        </div>
       </div>
       {clients.length ? (
         <div className="grid g3">

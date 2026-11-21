@@ -2,7 +2,8 @@
 
 import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { useRows } from "@/lib/use-rows";
+import { supabase, useRows } from "@/lib/use-rows";
+import { downloadCsv } from "@/lib/csv";
 import { parseYmd, today } from "@/lib/dates";
 import { hm, localParts } from "@/lib/cal";
 import { money } from "@/lib/format";
@@ -14,6 +15,7 @@ import { StatusPill } from "./client-invoices";
 import ClientAvatar from "./client-avatar";
 import Seg from "./seg";
 import Icon from "./icon";
+import Sheet, { type SheetCol, type Val } from "./views/sheet";
 
 type Entry = { id: string; client_id: string | null; started_at: string; minutes: number };
 type Show = "open" | "overdue" | "draft" | "paid" | "all";
@@ -35,6 +37,7 @@ function Inner({ clients, base, rates, from }: { clients: Client[]; base: string
   const [show, setShow] = useState<Show>("open");
   const [who, setWho] = useState("");
   const [q, setQ] = useState("");
+  const [layout, setLayout] = useState<"list" | "sheet">("list");
 
   const t = today(), year = t.slice(0, 4);
   const list = invoices ?? [];
@@ -70,6 +73,34 @@ function Inner({ clients, base, rates, from }: { clients: Client[]; base: string
     try { await navigator.clipboard.writeText(invoiceText(i, client(i.client_id), from)); toast(`${i.number} copied. Paste it into an email or chat.`); }
     catch { toast("Couldn't copy here. Open the invoice instead."); }
   }
+  // Spreadsheet mode: dates and status edit in place, totals stay read-only.
+  const cname = (i: Invoice) => { const c = client(i.client_id); return c ? clientLabel(c) : "Other income"; };
+  const sheetCols: SheetCol<Invoice>[] = [
+    { key: "number", label: "Number", type: "text", edit: false, get: (i) => i.number },
+    { key: "client", label: "Client", type: "text", edit: false, get: cname },
+    { key: "issue_date", label: "Issued", type: "date", get: (i) => i.issue_date },
+    { key: "due_date", label: "Due", type: "date", get: (i) => i.due_date, show: (i, v) => (v ? <span style={isOverdue(i, t) ? { color: "var(--bad)" } : undefined}>{short(String(v))}</span> : <span className="muted">—</span>) },
+    { key: "status", label: "Status", type: "select", get: (i) => i.status, options: [["draft", "Draft"], ["sent", "Sent"], ["paid", "Paid"]], show: (i, v) => <StatusPill inv={{ ...i, status: v as Invoice["status"] }} t={t} /> },
+    { key: "total", label: "Total", type: "number", edit: false, right: true, get: (i) => total(i), show: (i) => money(total(i), i.currency) },
+    { key: "currency", label: "Currency", type: "text", edit: false, get: (i) => i.currency },
+  ];
+  async function saveCell(i: Invoice, key: string, v: Val): Promise<{ error: unknown }> {
+    let patch: Record<string, unknown>;
+    if (key === "issue_date") { if (!v) return { error: "Issue date is required" }; patch = { issue_date: v }; }
+    else if (key === "due_date") patch = { due_date: v || null };
+    else if (key === "status" && (v === "draft" || v === "sent" || v === "paid")) {
+      // Same rules as the invoice form: payment details only belong to paid invoices.
+      patch = v === "paid" ? { status: v, paid_date: i.paid_date ?? t } : { status: v, paid_date: null, paid_amount: null, method: "" };
+    } else return { error: "Not editable" };
+    const { error } = await supabase().from("invoices").update(patch).eq("id", i.id);
+    if (!error) reload();
+    return { error };
+  }
+  function exportCsv() {
+    downloadCsv(`invoices-${t}.csv`, [["number", "client", "issue_date", "due_date", "status", "total", "currency", "paid_date", "paid_amount", "method"],
+      ...shown.map((i) => [i.number, cname(i), i.issue_date, i.due_date ?? "", i.status, total(i), i.currency, i.paid_date ?? "", i.paid_amount ?? "", i.method])]);
+  }
+
   const dueText = (i: Invoice) => {
     if (i.status === "paid") return i.paid_date ? `Paid ${short(i.paid_date)}` : "Paid";
     if (!i.due_date) return "No due date";
@@ -111,13 +142,17 @@ function Inner({ clients, base, rates, from }: { clients: Client[]; base: string
           {clients.filter((c) => !c.personal).map((c) => <option key={c.id} value={c.id}>{clientLabel(c)}</option>)}
         </select>
         <input className="auto-pick inv-search" type="search" placeholder="Search number or client" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search invoices" />
+        <Seg label="Layout" value={layout} onChange={setLayout} options={[["list", "List"], ["sheet", "Sheet"]]} />
         <span className="grow" />
+        <button className="btn ghost" onClick={exportCsv} disabled={!shown.length}><Icon name="file" />Export</button>
         <button className="btn" onClick={() => setForm({ mode: "payment", inv: { client_id: who || undefined } })}><Icon name="coin" />Record a payment</button>
         <button className="btn solid" onClick={() => setForm({ mode: "invoice", inv: { client_id: who || undefined, currency: client(who || null)?.currency } })}><Icon name="plus" />New invoice</button>
       </div>
 
       <div className="card">
-        {invoices == null ? <div className="skel" style={{ height: 160 }} /> : shown.length ? (
+        {invoices == null ? <div className="skel" style={{ height: 160 }} /> : shown.length && layout === "sheet" ? (
+          <Sheet label="Invoices" rows={shown} cols={sheetCols} save={saveCell} open={open} />
+        ) : shown.length ? (
           <div className="table-wrap inv-wide">
             <table className="inv-table">
               <thead><tr><th>Number</th><th>Client</th><th>Issued</th><th>When</th><th>Status</th><th className="r">Amount</th><th /></tr></thead>
@@ -149,7 +184,7 @@ function Inner({ clients, base, rates, from }: { clients: Client[]; base: string
             </table>
           </div>
         ) : null}
-        {invoices != null && shown.length > 0 && (
+        {invoices != null && shown.length > 0 && layout === "list" && (
           <div className="list inv-phone">
             {shown.map((i) => {
               const c = client(i.client_id);
